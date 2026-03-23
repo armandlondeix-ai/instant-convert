@@ -1,8 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { FileStack, FolderOpen, X, Folder, Files } from 'lucide-react';
+import { listen } from '@tauri-apps/api/event';
+import { FileStack, FolderOpen, Files } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { runRustCommand } from '../utils/tauri';
 import { usePathDropzone } from '../utils/dropzone';
+import BatchFileList from '../components/BatchFileList';
+import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import {
+  buildSingleOrBatchOutputName,
+  removePathFromList,
+  toUniquePaths,
+  getFileName,
+} from '../utils/filePaths';
 
 const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [paths, setPaths] = useState([]);
@@ -10,17 +19,20 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [outputName, setOutputName] = useState('document_fusionne');
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const progressPercent = loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
+  const [currentPath, setCurrentPath] = useState('');
+  const [completedCount, setCompletedCount] = useState(0);
+  const [batchTotal, setBatchTotal] = useState(0);
+  const progressPercent = batchTotal > 0 ? Math.round((completedCount / batchTotal) * 100) : loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
 
   const mergedName = useMemo(() => `${outputName}.pdf`, [outputName]);
 
   const appendFiles = (files) => {
-    setPaths((prev) => [...new Set([...prev, ...files])]);
-    if (files.length > 0) {
-      const firstFile = files[0].split('/').pop() || 'document';
-      const stem = firstFile.includes('.') ? firstFile.split('.').slice(0, -1).join('.') : firstFile;
-      setOutputName(`${stem}_fusion`);
-    }
+    setPaths((prev) => toUniquePaths(prev, files));
+    setOutputName(buildSingleOrBatchOutputName(files, {
+      singleSuffix: '_fusion',
+      batchName: 'document_fusionne',
+      fallback: 'document',
+    }));
     setStatus("");
   };
 
@@ -52,14 +64,34 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const handleMerge = async () => {
     if (paths.length < 2) return;
 
+    const batchPaths = [...paths];
     setLoading(true);
     setStatus("Fusion en cours...");
+    setCurrentPath(batchPaths[0] || '');
+    setCompletedCount(0);
+    setBatchTotal(batchPaths.length);
+
+    const unlisten = await listen('merge-progress', (event) => {
+      const processedPath = event.payload?.path;
+      if (!processedPath) return;
+
+      setCompletedCount((prev) => prev + 1);
+      setPaths((prev) => {
+        const remainingPaths = prev.filter((item) => item !== processedPath);
+        setCurrentPath(remainingPaths[0] || '');
+        return remainingPaths;
+      });
+    });
+
     try {
-      const result = await runRustCommand('merge_pdfs', { paths, outputDir, outputName });
+      const result = await runRustCommand('merge_pdfs', { paths: batchPaths, outputDir, outputName });
       setStatus(result);
+      setCurrentPath('');
     } catch (err) {
       setStatus("Erreur : " + err);
+      setCurrentPath('');
     } finally {
+      unlisten();
       setLoading(false);
     }
   };
@@ -87,22 +119,7 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
           </div>
 
-          <div className="panel">
-            <div className="split-row">
-              <div className="icon-copy">
-                <div className="section-icon accent-amber">
-                  <Folder size={20} />
-                </div>
-                <div>
-                  <p className="eyebrow">Dossier de sortie</p>
-                  <p className="path-text">{outputDir}</p>
-                </div>
-              </div>
-              <button onClick={handlePickOutputDir} className="btn btn-secondary">
-                Modifier
-              </button>
-            </div>
-          </div>
+          <OutputDirectoryCard outputDir={outputDir} onPick={handlePickOutputDir} />
 
           <div className="panel stack-md">
             <div className="between-row">
@@ -115,28 +132,14 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
               </button>
             </div>
 
-            {paths.length === 0 ? (
-              <div className="empty-state">Aucun PDF selectionne pour le moment.</div>
-            ) : (
-              <div className="file-list">
-                {paths.map((path, i) => (
-                  <div key={path} className="file-row">
-                    <div className="file-row-main">
-                      <div className="file-index accent-red">{i + 1}</div>
-                      <div className="file-copy">
-                        <span className="file-name">{path.split('/').pop()}</span>
-                        <span className="file-subtitle">{path}</span>
-                      </div>
-                    </div>
-                    {!loading && (
-                      <button onClick={() => setPaths(paths.filter((item) => item !== path))} className="icon-button" aria-label="Supprimer le fichier">
-                        <X size={18} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <BatchFileList
+              files={paths}
+              accentClass="accent-red"
+              loading={loading}
+              currentPath={currentPath}
+              emptyMessage="Aucun PDF selectionne pour le moment."
+              onRemove={(path) => setPaths((prev) => removePathFromList(prev, path))}
+            />
           </div>
         </div>
 
@@ -162,15 +165,19 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
           <div className="progress-card">
             <div className="between-row">
               <span className="eyebrow light">Resume</span>
-              <span className="progress-value">{paths.length}</span>
+              <span className="progress-value">{completedCount}/{batchTotal || paths.length}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar" style={{ width: `${progressPercent}%` }} />
             </div>
             <p className="progress-text">
-              {paths.length < 2
-                ? "Ajoutez au moins deux PDF pour lancer la fusion."
-                : `${paths.length} PDF seront fusionnes dans ${mergedName}.`}
+              {loading && currentPath
+                ? `Traite : ${getFileName(currentPath)}`
+                : paths.length < 2 && completedCount === 0
+                  ? "Ajoutez au moins deux PDF pour lancer la fusion."
+                  : loading
+                    ? `${completedCount} PDF deja integres dans ${mergedName}.`
+                    : `${paths.length} PDF seront fusionnes dans ${mergedName}.`}
             </p>
           </div>
 

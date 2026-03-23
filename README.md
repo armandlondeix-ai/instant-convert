@@ -1,40 +1,69 @@
 # Instant Convert
 
-Instant Convert is a desktop toolbox built with Tauri, React and Rust for handling common file workflows locally.
+Instant Convert is a local desktop toolbox built with Tauri, React and Rust.
+It focuses on common file workflows without sending files to a remote service.
 
-The app currently includes:
+## What the app does
 
-- file conversion for images, audio and video
-- image reduction and optional grayscale export
+The current application includes:
+
+- image, audio and video conversion
+- ZIP compression for files and folders
 - PDF merge
-- ZIP compression
-- OCR extraction from images
+- batch image reduction
+- OCR text extraction from images
+- language and appearance settings stored locally
 
-Everything runs locally on the machine. Audio and video conversion rely on `ffmpeg`.
+The interface keeps long-running tasks alive when switching between tools, and batch screens show live progress as files are processed.
 
-## Features
+## Current feature set
 
-- Convert image formats such as `png`, `jpg`, `jpeg`, `webp`, `bmp`, `gif`, `tiff` and `pdf` output from images
-- Convert audio formats such as `mp3`, `wav`, `flac`, `ogg`, `opus`, `m4a`, `aac`, `wma`, `aiff`
-- Convert video formats such as `mp4`, `mkv`, `mov`, `avi`, `webm`, `flv`, `wmv`, `m4v`, `mpg`, `mpeg`, `ts`, `3gp`, `ogv`
-- Merge multiple PDFs into one file
-- Compress files and folders into ZIP archives
-- Reduce image dimensions in batch
-- Run OCR on images with local models
+### Conversion
 
-## Stack
+- Images to `pdf`, `png`, `jpg`, `jpeg`, `webp`, `bmp`, `gif`, `tiff`
+- Audio to `mp3`, `wav`, `flac`, `ogg`, `opus`, `m4a`, `aac`, `wma`, `aiff`
+- Video to `mp4`, `mkv`, `mov`, `avi`, `webm`, `flv`, `wmv`, `m4v`, `mpg`, `mpeg`, `ts`, `3gp`, `ogv`
+
+### Compression
+
+- ZIP archive generation from one or many files
+- Folder compression
+- Progress feedback during batch processing
+
+### PDF tools
+
+- Merge several PDF files into one output file
+
+### Image reduction
+
+- Batch resize based on a percentage
+- Optional grayscale export
+
+### OCR
+
+- Text extraction from image files
+- OCR models stored locally in `src-tauri/models`
+- Models downloaded automatically if missing
+
+## Tech stack
 
 - Tauri 2
-- React 19 + Vite
+- React 19
+- Vite
 - Rust
-- `ffmpeg` for audio and video transcoding
+- `ffmpeg` for audio and video conversion
+- `ocrs` + `rten` for OCR
 
 ## Requirements
 
-- Node.js 20+ recommended
+To run the desktop app locally, make sure you have:
+
+- Node.js 20 or newer
 - Rust toolchain
-- Tauri system prerequisites
-- `ffmpeg` available in `PATH` for audio/video conversion
+- Tauri system prerequisites for your OS
+- `ffmpeg` available in your `PATH`
+
+If `ffmpeg` is missing, audio and video conversion will fail.
 
 ## Development
 
@@ -44,13 +73,13 @@ Install dependencies:
 npm install
 ```
 
-Run the web frontend:
+Run the frontend only:
 
 ```bash
 npm run dev
 ```
 
-Run the desktop app:
+Run the desktop app in development:
 
 ```bash
 npm run tauri dev
@@ -62,20 +91,42 @@ Build the frontend:
 npm run build
 ```
 
-Build the desktop app:
+Build the desktop application:
 
 ```bash
 npm run tauri build
 ```
 
+## Project structure
+
+### Frontend
+
+- `src/views/` contains the tool screens
+- `src/components/` contains shared interface pieces
+- `src/utils/` contains frontend helpers
+
+### Backend
+
+- `src-tauri/src/lib.rs` is the Tauri entry point
+- `src-tauri/src/conversion.rs` handles file conversion commands
+- `src-tauri/src/compression.rs` handles ZIP compression
+- `src-tauri/src/merge.rs` handles PDF merge
+- `src-tauri/src/reduction.rs` handles image reduction
+- `src-tauri/src/ocr.rs` handles OCR
+- `src-tauri/src/shared.rs` contains shared backend helpers
+
 ## Notes
 
-- OCR models are stored in `src-tauri/models`.
-- If `ffmpeg` is missing, audio and video conversions will fail.
-- Generated folders such as `dist`, `node_modules` and `src-tauri/target` should not be committed.
+- Everything is designed to run locally on the machine.
+- OCR model files live in `src-tauri/models`.
+- Generated directories such as `dist`, `node_modules` and `src-tauri/target` should not be committed.
 
-## Open Source
+## Open source
 
 This project is released under the MIT license. See [LICENSE](./LICENSE).
 
-Contributions, bug reports and small improvements are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md), [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) and [SECURITY.md](./SECURITY.md).
+For contributions and project guidelines, see:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md)

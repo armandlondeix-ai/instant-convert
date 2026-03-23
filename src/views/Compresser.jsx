@@ -1,8 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { FileArchive, FolderOpen, Folder, X, Archive } from 'lucide-react';
+import { FileArchive, FolderOpen, Archive } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
+import { listen } from '@tauri-apps/api/event';
 import { runRustCommand } from '../utils/tauri';
 import { usePathDropzone } from '../utils/dropzone';
+import BatchFileList from '../components/BatchFileList';
+import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import {
+  buildSingleOrBatchOutputName,
+  removePathFromList,
+  toUniquePaths,
+  getFileName,
+  getFileStem,
+} from '../utils/filePaths';
 
 const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [paths, setPaths] = useState([]);
@@ -10,23 +20,26 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [outputName, setOutputName] = useState('archive_compresse');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const progressPercent = loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
+  const [currentPath, setCurrentPath] = useState('');
+  const [completedCount, setCompletedCount] = useState(0);
+  const [batchTotal, setBatchTotal] = useState(0);
+  const progressPercent = batchTotal > 0 ? Math.round((completedCount / batchTotal) * 100) : loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
 
   const appendFiles = (files) => {
-    setPaths((prev) => [...new Set([...prev, ...files])]);
-    if (files.length > 0) {
-      const firstFile = files[0].split('/').pop() || 'archive';
-      const stem = firstFile.includes('.') ? firstFile.split('.').slice(0, -1).join('.') : firstFile;
-      setOutputName(files.length === 1 ? `${stem}_compresse` : 'lot_compresse');
-    }
+    setPaths((prev) => toUniquePaths(prev, files));
+    setOutputName(buildSingleOrBatchOutputName(files, {
+      singleSuffix: '_compresse',
+      batchName: 'lot_compresse',
+      fallback: 'archive',
+    }));
     setStatus('');
   };
 
   const archiveName = useMemo(() => {
     if (paths.length === 0) return `${outputName}.zip`;
     if (paths.length === 1) {
-      const fileName = paths[0].split('/').pop() || 'archive';
-      const stem = fileName.includes('.') ? fileName.split('.').slice(0, -1).join('.') : fileName;
+      const fileName = getFileName(paths[0]) || 'archive';
+      const stem = getFileStem(paths[0], 'archive');
       return `${outputName || `${stem || 'archive'}_compresse`}.zip`;
     }
     return `${outputName}.zip`;
@@ -60,20 +73,37 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
   };
 
   const removeFile = (fileToRemove) => {
-    setPaths((prev) => prev.filter((path) => path !== fileToRemove));
+    setPaths((prev) => removePathFromList(prev, fileToRemove));
   };
 
   const handleAction = async () => {
     if (paths.length === 0) return;
 
+    const batchPaths = [...paths];
     setLoading(true);
     setStatus('Compression en cours...');
+    setCurrentPath('');
+    setCompletedCount(0);
+    setBatchTotal(batchPaths.length);
+
+    const unlisten = await listen('compression-progress', (event) => {
+      const processedPath = event.payload?.path;
+      if (!processedPath) return;
+
+      setCurrentPath(processedPath);
+      setCompletedCount((prev) => prev + 1);
+      setPaths((prev) => prev.filter((path) => path !== processedPath));
+    });
+
     try {
-      const result = await runRustCommand('compress_files', { paths, outputDir, outputName });
+      const result = await runRustCommand('compress_files', { paths: batchPaths, outputDir, outputName });
       setStatus(result);
+      setCurrentPath('');
     } catch (err) {
       setStatus('Erreur : ' + err);
+      setCurrentPath('');
     } finally {
+      unlisten();
       setLoading(false);
     }
   };
@@ -101,22 +131,7 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
           </div>
 
-          <div className="panel">
-            <div className="split-row">
-              <div className="icon-copy">
-                <div className="section-icon accent-amber">
-                  <Folder size={20} />
-                </div>
-                <div>
-                  <p className="eyebrow">Dossier de sortie</p>
-                  <p className="path-text">{outputDir}</p>
-                </div>
-              </div>
-              <button onClick={handlePickOutputDir} className="btn btn-secondary">
-                Modifier
-              </button>
-            </div>
-          </div>
+          <OutputDirectoryCard outputDir={outputDir} onPick={handlePickOutputDir} />
 
           <div className="panel stack-md">
             <div className="between-row">
@@ -134,28 +149,14 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
               </div>
             </div>
 
-            {paths.length === 0 ? (
-              <div className="empty-state">Aucun fichier selectionne pour le moment.</div>
-            ) : (
-              <div className="file-list">
-                {paths.map((path, index) => (
-                  <div key={path} className="file-row">
-                    <div className="file-row-main">
-                      <div className="file-index accent-orange">{index + 1}</div>
-                      <div className="file-copy">
-                        <span className="file-name">{path.split('/').pop()}</span>
-                        <span className="file-subtitle">{path}</span>
-                      </div>
-                    </div>
-                    {!loading && (
-                      <button onClick={() => removeFile(path)} className="icon-button" aria-label="Supprimer le fichier">
-                        <X size={18} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <BatchFileList
+              files={paths}
+              accentClass="accent-orange"
+              loading={loading}
+              currentPath={currentPath}
+              emptyMessage="Aucun fichier selectionne pour le moment."
+              onRemove={removeFile}
+            />
           </div>
         </div>
 
@@ -181,15 +182,19 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
           <div className="progress-card">
             <div className="between-row">
               <span className="eyebrow light">Resume</span>
-              <span className="progress-value">{paths.length}</span>
+              <span className="progress-value">{completedCount}/{batchTotal || paths.length}</span>
             </div>
             <div className="progress-track">
               <div className="progress-bar" style={{ width: `${progressPercent}%` }} />
             </div>
             <p className="progress-text">
-              {paths.length === 0
-                ? "Ajoutez des fichiers pour preparer l'archive."
-                : `${paths.length} fichier${paths.length > 1 ? 's' : ''} seront compresses dans ${archiveName}.`}
+              {loading && currentPath
+                ? `Traite : ${currentPath.split('/').pop()}`
+                : paths.length === 0 && completedCount === 0
+                  ? "Ajoutez des fichiers pour preparer l'archive."
+                  : loading
+                    ? `${completedCount} fichier${completedCount > 1 ? 's' : ''} deja compresses dans ${archiveName}.`
+                    : `${paths.length} fichier${paths.length > 1 ? 's' : ''} seront compresses dans ${archiveName}.`}
             </p>
           </div>
 

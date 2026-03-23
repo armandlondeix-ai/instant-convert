@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
-import { RefreshCcw, FileText, Folder, Settings2, Play, CheckCircle, X, Loader2 } from 'lucide-react';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
+import { RefreshCcw, FileText, Settings2, Play, CheckCircle } from 'lucide-react';
 import { usePathDropzone } from '../utils/dropzone';
+import BatchFileList from '../components/BatchFileList';
+import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import {
+  buildSingleOrBatchOutputName,
+  buildConvertedOutputPath,
+  removePathFromList,
+  toUniquePaths,
+  getFileName,
+} from '../utils/filePaths';
 
 const SUPPORTED_EXTENSIONS = [
   'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tif', 'tiff', 'webp', 'ico', 'pdf',
@@ -22,21 +33,23 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [completedCount, setCompletedCount] = useState(0);
   const [batchTotal, setBatchTotal] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
+  const [lastConvertedPath, setLastConvertedPath] = useState('');
 
   const appendFiles = (nextFiles) => {
-    setFiles((prev) => {
-      const merged = [...prev, ...nextFiles];
-      return [...new Set(merged)];
-    });
-    if (nextFiles.length > 0) {
-      const firstFile = nextFiles[0].split('/').pop() || 'fichier';
-      const stem = firstFile.includes('.') ? firstFile.split('.').slice(0, -1).join('.') : firstFile;
-      setOutputName(nextFiles.length === 1 ? `${stem}_converti` : 'converti');
-    }
+    setFiles((prev) => toUniquePaths(prev, nextFiles));
+    setOutputName(buildSingleOrBatchOutputName(nextFiles, {
+      singleSuffix: '_converti',
+      batchName: 'converti',
+      fallback: 'fichier',
+    }));
   };
 
   useEffect(() => {
     const loadFormats = async () => {
+      if (status === 'processing') {
+        return;
+      }
+
       if (files.length === 0) {
         setAvailableFormats([]);
         setTargetFormat('');
@@ -64,7 +77,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
     };
 
     loadFormats();
-  }, [files]);
+  }, [files, status]);
 
   const selectFiles = async () => {
     const selected = await open({
@@ -83,7 +96,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
   });
 
   const removeFile = (fileToRemove) => {
-    setFiles((prev) => prev.filter((file) => file !== fileToRemove));
+    setFiles((prev) => removePathFromList(prev, fileToRemove));
   };
 
   const selectOutputDir = async () => {
@@ -102,24 +115,40 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
     setStatus('processing');
     setCompletedCount(0);
     setBatchTotal(batchFiles.length);
-    setCurrentFile('');
+    setCurrentFile(batchFiles[0] || '');
     setErrorMessage('');
+    setLastConvertedPath('');
 
-    try {
-      for (let index = 0; index < batchFiles.length; index += 1) {
-        const file = batchFiles[index];
-        setCurrentFile(file);
+    const singleFile = batchFiles.length === 1;
 
-        await invoke('convert_format', {
-          paths: [file],
-          target: targetFormat,
+    const unlisten = await listen('conversion-progress', (event) => {
+      const processedFile = event.payload?.path;
+      if (!processedFile) return;
+
+      setCompletedCount((prev) => prev + 1);
+      setLastConvertedPath(
+        buildConvertedOutputPath({
+          inputPath: processedFile,
           outputDir,
           outputName,
-        });
+          targetFormat,
+          singleFile,
+        }),
+      );
+      setFiles((prev) => {
+        const remainingFiles = prev.filter((queuedFile) => queuedFile !== processedFile);
+        setCurrentFile(remainingFiles[0] || '');
+        return remainingFiles;
+      });
+    });
 
-        setCompletedCount(index + 1);
-        setFiles((prev) => prev.filter((queuedFile) => queuedFile !== file));
-      }
+    try {
+      await invoke('convert_format', {
+        paths: batchFiles,
+        target: targetFormat,
+        outputDir,
+        outputName,
+      });
 
       setStatus('success');
       setCurrentFile('');
@@ -128,10 +157,22 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
       console.error(err);
       setStatus('error');
       setErrorMessage(String(err));
+    } finally {
+      unlisten();
     }
   };
 
   const progressPercent = batchTotal > 0 ? Math.round((completedCount / batchTotal) * 100) : 0;
+
+  const revealConvertedFile = async () => {
+    if (!lastConvertedPath) return;
+
+    try {
+      await revealItemInDir(lastConvertedPath);
+    } catch (err) {
+      setErrorMessage(`Impossible d'ouvrir le dossier du fichier converti : ${String(err)}`);
+    }
+  };
 
   return (
     <section className="view-shell">
@@ -156,22 +197,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
           </div>
 
-          <div className="panel">
-            <div className="split-row">
-              <div className="icon-copy">
-                <div className="section-icon accent-amber">
-                  <Folder size={20} />
-                </div>
-                <div>
-                  <p className="eyebrow">Dossier de sortie</p>
-                  <p className="path-text">{outputDir}</p>
-                </div>
-              </div>
-              <button onClick={selectOutputDir} className="btn btn-secondary">
-                Modifier
-              </button>
-            </div>
-          </div>
+          <OutputDirectoryCard outputDir={outputDir} onPick={selectOutputDir} />
 
           <div className="panel stack-md">
             <div className="between-row">
@@ -184,49 +210,14 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
               </button>
             </div>
 
-            {files.length === 0 ? (
-              <div className="empty-state">
-                Aucun fichier pour le moment.
-              </div>
-            ) : (
-              <div className="file-list">
-                {files.map((file, index) => {
-                  const isCurrent = status === 'processing' && currentFile === file;
-                  const isDone = completedCount > index;
-
-                  return (
-                    <div
-                      key={file}
-                      className={`file-row conversion-row ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}`}
-                    >
-                      <div className="file-row-main">
-                        <div className={`file-index ${isDone ? 'accent-teal' : 'accent-blue'}`}>
-                          {isDone ? <CheckCircle size={16} /> : index + 1}
-                        </div>
-                        <div className="file-copy">
-                          <span className="file-name">{file.split('/').pop()}</span>
-                          <span className="file-subtitle">{file}</span>
-                        </div>
-                      </div>
-                      <div className="file-actions">
-                        {isCurrent && (
-                          <span className="file-badge in-progress">
-                            <Loader2 size={14} className="spin" />
-                            En cours
-                          </span>
-                        )}
-                        {isDone && !isCurrent && <span className="file-badge success">Converti</span>}
-                        {status !== 'processing' && (
-                          <button onClick={() => removeFile(file)} className="icon-button" aria-label="Supprimer le fichier">
-                            <X size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <BatchFileList
+              files={files}
+              accentClass="accent-blue"
+              loading={status === 'processing'}
+              currentPath={currentFile}
+              emptyMessage="Aucun fichier pour le moment."
+              onRemove={removeFile}
+            />
           </div>
         </div>
 
@@ -282,7 +273,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
             <p className="progress-text">
               {status === 'processing'
-                ? `Fichier en cours : ${currentFile.split('/').pop()}`
+                ? `Fichier en cours : ${getFileName(currentFile)}`
                 : status === 'success'
                   ? 'Tous les fichiers ont ete convertis.'
                   : targetFormat
@@ -293,6 +284,12 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
           {errorMessage && (
             <div className={`status-banner ${status === 'error' ? 'error' : 'info'}`}>{errorMessage}</div>
+          )}
+
+          {status === 'success' && lastConvertedPath && (
+            <button onClick={revealConvertedFile} className="text-button" type="button">
+              Ouvrir dans le gestionnaire de fichiers
+            </button>
           )}
 
           <button

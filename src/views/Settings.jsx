@@ -98,15 +98,6 @@ const Settings = ({ settings, updateSettings, t, resolvedAppearance }) => {
             <p className="field-help">{t.settings.outputDirHelp}</p>
           </div>
 
-          <label className="option-row">
-            <input
-              type="checkbox"
-              checked={settings.rememberLastTab}
-              onChange={(e) => updateSettings({ rememberLastTab: e.target.checked })}
-            />
-            <span>{t.settings.rememberTabLabel}</span>
-          </label>
-          <p className="field-help">{t.settings.rememberTabHelp}</p>
         </div>
 
         <div className="settings-panel">

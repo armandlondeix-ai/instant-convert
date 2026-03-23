@@ -4,7 +4,6 @@ export const defaultSettings = {
   language: 'fr',
   appearance: 'system',
   defaultOutputDir: '/home/armand/Test',
-  rememberLastTab: true,
 };
 
 export const loadSettings = () => {

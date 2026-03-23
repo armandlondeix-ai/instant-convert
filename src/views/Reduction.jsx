@@ -1,8 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Minimize2, SlidersHorizontal, Folder, FolderOpen, Image as ImageIcon, X } from 'lucide-react';
+import { Minimize2, SlidersHorizontal, FolderOpen, Image as ImageIcon } from 'lucide-react';
 import { runRustCommand } from '../utils/tauri';
 import { usePathDropzone } from '../utils/dropzone';
+import BatchFileList from '../components/BatchFileList';
+import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import {
+  buildSingleOrBatchOutputName,
+  removePathFromList,
+  toUniquePaths,
+} from '../utils/filePaths';
 
 const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [paths, setPaths] = useState([]);
@@ -20,12 +27,12 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
   }, [paths, scale, grayscale]);
 
   const appendFiles = (files) => {
-    setPaths((prev) => [...new Set([...prev, ...files])]);
-    if (files.length > 0) {
-      const firstFile = files[0].split('/').pop() || 'image';
-      const stem = firstFile.includes('.') ? firstFile.split('.').slice(0, -1).join('.') : firstFile;
-      setOutputName(files.length === 1 ? `${stem}_reduction` : 'reduction');
-    }
+    setPaths((prev) => toUniquePaths(prev, files));
+    setOutputName(buildSingleOrBatchOutputName(files, {
+      singleSuffix: '_reduction',
+      batchName: 'reduction',
+      fallback: 'image',
+    }));
     setStatus('');
   };
 
@@ -98,22 +105,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
           </div>
 
-          <div className="panel">
-            <div className="split-row">
-              <div className="icon-copy">
-                <div className="section-icon accent-amber">
-                  <Folder size={20} />
-                </div>
-                <div>
-                  <p className="eyebrow">Dossier de sortie</p>
-                  <p className="path-text">{outputDir}</p>
-                </div>
-              </div>
-              <button onClick={handlePickOutputDir} className="btn btn-secondary">
-                Modifier
-              </button>
-            </div>
-          </div>
+          <OutputDirectoryCard outputDir={outputDir} onPick={handlePickOutputDir} />
 
           <div className="panel stack-md">
             <div className="between-row">
@@ -126,28 +118,13 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
               </button>
             </div>
 
-            {paths.length === 0 ? (
-              <div className="empty-state">Aucune image selectionnee pour le moment.</div>
-            ) : (
-              <div className="file-list">
-                {paths.map((path, index) => (
-                  <div key={path} className="file-row">
-                    <div className="file-row-main">
-                      <div className="file-index accent-gold">{index + 1}</div>
-                      <div className="file-copy">
-                        <span className="file-name">{path.split('/').pop()}</span>
-                        <span className="file-subtitle">{path}</span>
-                      </div>
-                    </div>
-                    {!loading && (
-                      <button onClick={() => setPaths(paths.filter((item) => item !== path))} className="icon-button" aria-label="Supprimer le fichier">
-                        <X size={18} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <BatchFileList
+              files={paths}
+              accentClass="accent-gold"
+              loading={loading}
+              emptyMessage="Aucune image selectionnee pour le moment."
+              onRemove={(path) => setPaths((prev) => removePathFromList(prev, path))}
+            />
           </div>
         </div>
 

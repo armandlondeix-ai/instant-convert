@@ -13,8 +13,6 @@ import { defaultSettings, loadSettings, saveSettings } from './settings';
 const App = () => {
   const [settings, setSettings] = useState(() => loadSettings());
   const [activeTab, setActiveTab] = useState(() => {
-    const loadedSettings = loadSettings();
-    if (!loadedSettings.rememberLastTab) return 'convertir';
     return localStorage.getItem('instant-convert-last-tab') || 'convertir';
   });
   const language = settings.language || defaultSettings.language;
@@ -37,9 +35,7 @@ const App = () => {
 
   const handleSetActiveTab = (nextTab) => {
     setActiveTab(nextTab);
-    if (settings.rememberLastTab) {
-      localStorage.setItem('instant-convert-last-tab', nextTab);
-    }
+    localStorage.setItem('instant-convert-last-tab', nextTab);
   };
 
   useEffect(() => {
@@ -61,17 +57,24 @@ const App = () => {
     return () => media.removeEventListener('change', applyAppearance);
   }, [settings.appearance]);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'compresser': return <Compresser defaultOutputDir={settings.defaultOutputDir} />;
-      case 'convertir':  return <Convertir defaultOutputDir={settings.defaultOutputDir} />;
-      case 'fusionner': return <FusionPDF defaultOutputDir={settings.defaultOutputDir} />;      
-      case 'reduction':  return <Reduction defaultOutputDir={settings.defaultOutputDir} />; 
-      case 'ocr': return <Ocr />;
-      case 'reglages':    return <Settings settings={settings} updateSettings={updateSettings} t={t} resolvedAppearance={resolvedAppearance} />;
-      default:           return <Convertir defaultOutputDir={settings.defaultOutputDir} />;
-    }
-  };
+  const views = [
+    { id: 'compresser', element: <Compresser defaultOutputDir={settings.defaultOutputDir} /> },
+    { id: 'convertir', element: <Convertir defaultOutputDir={settings.defaultOutputDir} /> },
+    { id: 'fusionner', element: <FusionPDF defaultOutputDir={settings.defaultOutputDir} /> },
+    { id: 'reduction', element: <Reduction defaultOutputDir={settings.defaultOutputDir} /> },
+    { id: 'ocr', element: <Ocr /> },
+    {
+      id: 'reglages',
+      element: (
+        <Settings
+          settings={settings}
+          updateSettings={updateSettings}
+          t={t}
+          resolvedAppearance={resolvedAppearance}
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="app-shell">
@@ -82,9 +85,17 @@ const App = () => {
             <p className="eyebrow">{t.toolbox}</p>
             <h1>{tabLabel}</h1>
           </div>
-          <div className="topbar-chip">{t.offline}</div>
         </header>
-        {renderContent()}
+        {views.map(({ id, element }) => (
+          <section
+            key={id}
+            className={`tab-panel ${activeTab === id ? 'is-active' : ''}`}
+            hidden={activeTab !== id}
+            aria-hidden={activeTab !== id}
+          >
+            {element}
+          </section>
+        ))}
       </main>
     </div>
   );
