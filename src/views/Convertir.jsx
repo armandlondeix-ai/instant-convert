@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -8,26 +8,22 @@ import { usePathDropzone } from '../utils/dropzone';
 import BatchFileList from '../components/BatchFileList';
 import OutputDirectoryCard from '../components/OutputDirectoryCard';
 import {
-  buildSingleOrBatchOutputName,
-  buildConvertedOutputPath,
   removePathFromList,
   toUniquePaths,
   getFileName,
+  getFileStem,
 } from '../utils/filePaths';
+import { applyNameTemplate, todayIsoDate } from '../utils/nameTemplate';
+import { supportedExtensionsForPicker } from '../supportedFormats';
 
-const SUPPORTED_EXTENSIONS = [
-  'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tif', 'tiff', 'webp', 'ico', 'pdf',
-  'mp3', 'wav', 'flac', 'ogg', 'opus', 'm4a', 'aac', 'wma', 'aiff', 'aif',
-  'alac', 'amr', 'ac3', 'ape', 'au', 'caf', 'm4b', 'mka', 'mp2', 'oga', 'spx', 'weba',
-  'mp4', 'mkv', 'mov', 'avi', 'webm', 'flv', 'wmv', 'm4v', 'mpg', 'mpeg', 'ts', 'm2ts', 'mts', '3gp', 'ogv', 'vob',
-];
+const SUPPORTED_EXTENSIONS = supportedExtensionsForPicker;
 
-const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
+const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%name%_converti' }) => {
   const [files, setFiles] = useState([]);
   const [availableFormats, setAvailableFormats] = useState([]);
   const [targetFormat, setTargetFormat] = useState('');
   const [outputDir, setOutputDir] = useState(defaultOutputDir);
-  const [outputName, setOutputName] = useState('converti');
+  const [outputName, setOutputName] = useState(nameTemplate);
   const [status, setStatus] = useState('idle');
   const [currentFile, setCurrentFile] = useState('');
   const [completedCount, setCompletedCount] = useState(0);
@@ -37,12 +33,13 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
   const appendFiles = (nextFiles) => {
     setFiles((prev) => toUniquePaths(prev, nextFiles));
-    setOutputName(buildSingleOrBatchOutputName(nextFiles, {
-      singleSuffix: '_converti',
-      batchName: 'converti',
-      fallback: 'fichier',
-    }));
   };
+
+  useEffect(() => {
+    if (files.length === 0) {
+      setOutputName(nameTemplate);
+    }
+  }, [files.length, nameTemplate]);
 
   useEffect(() => {
     const loadFormats = async () => {
@@ -63,7 +60,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
         if (formats.length === 0) {
           setTargetFormat('');
-          setErrorMessage('Aucun format de sortie commun n’est disponible pour cette selection.');
+          setErrorMessage('Aucun format de sortie commun n’est disponible pour cette sélection.');
           return;
         }
 
@@ -123,18 +120,13 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
     const unlisten = await listen('conversion-progress', (event) => {
       const processedFile = event.payload?.path;
+      const outputPath = event.payload?.output_path;
       if (!processedFile) return;
 
       setCompletedCount((prev) => prev + 1);
-      setLastConvertedPath(
-        buildConvertedOutputPath({
-          inputPath: processedFile,
-          outputDir,
-          outputName,
-          targetFormat,
-          singleFile,
-        }),
-      );
+      if (outputPath) {
+        setLastConvertedPath(outputPath);
+      }
       setFiles((prev) => {
         const remainingFiles = prev.filter((queuedFile) => queuedFile !== processedFile);
         setCurrentFile(remainingFiles[0] || '');
@@ -164,13 +156,34 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
   const progressPercent = batchTotal > 0 ? Math.round((completedCount / batchTotal) * 100) : 0;
 
+  const namePreview = useMemo(() => {
+    if (!targetFormat) return '';
+    const sample = files[0];
+    if (!sample) return `${outputName}.${targetFormat}`;
+    const stem = getFileStem(sample, 'fichier');
+    const ext = (getFileName(sample).split('.').pop() || '').toLowerCase();
+    const rendered = applyNameTemplate(outputName, {
+      name: stem,
+      extension: ext,
+      date: todayIsoDate(),
+    }).trim();
+
+    const safeRendered = rendered || stem || 'fichier';
+    const uniqueRendered =
+      files.length > 1 && !outputName.includes('%name%')
+        ? `${stem}_${safeRendered}`
+        : safeRendered;
+
+    return `${uniqueRendered}.${targetFormat}`;
+  }, [files, outputName, targetFormat]);
+
   const revealConvertedFile = async () => {
     if (!lastConvertedPath) return;
 
     try {
       await revealItemInDir(lastConvertedPath);
     } catch (err) {
-      setErrorMessage(`Impossible d'ouvrir le dossier du fichier converti : ${String(err)}`);
+      setErrorMessage(`Impossible d’ouvrir le dossier du fichier converti : ${String(err)}`);
     }
   };
 
@@ -178,12 +191,12 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
     <section className="view-shell">
       <div className="section-heading">
         <div className="section-title">
-          <span className="section-icon accent-blue"><RefreshCcw size={22} /></span>
-          <div>
-            <h2>Conversion</h2>
-            <p>Ajoutez des images, fichiers audio ou videos, puis choisissez un format de sortie propose automatiquement.</p>
+            <span className="section-icon accent-blue"><RefreshCcw size={22} /></span>
+            <div>
+              <h2>Conversion</h2>
+              <p>Ajoutez des images, documents, fichiers audio ou vidéos, puis choisissez un format de sortie proposé automatiquement.</p>
+            </div>
           </div>
-        </div>
         <div className="info-pill">{files.length} fichiers en attente</div>
       </div>
 
@@ -193,7 +206,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
             <div className="hero-drop-copy">
               <span className="section-icon accent-blue"><FileText size={24} /></span>
               <h3>Ajouter des fichiers</h3>
-              <p>{isDragActive ? 'Deposez vos fichiers ici.' : "Choisissez vos images, musiques ou videos, puis l'application calcule les formats de sortie possibles."}</p>
+              <p>{isDragActive ? 'Déposez vos fichiers ici.' : "Choisissez vos images, documents, musiques ou vidéos, puis l'application calcule les formats de sortie possibles."}</p>
             </div>
           </div>
 
@@ -203,7 +216,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
             <div className="between-row">
               <div>
                 <p className="eyebrow">Fichiers du lot</p>
-                <h3 className="panel-title">Liste des elements a convertir</h3>
+                <h3 className="panel-title">Liste des éléments à convertir</h3>
               </div>
               <button onClick={selectFiles} className="btn btn-secondary">
                 Ajouter
@@ -243,7 +256,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
               </div>
             ) : (
               <p className="settings-hint">
-                Ajoutez des images, fichiers audio ou videos compatibles pour voir les formats proposes.
+                Ajoutez des images, fichiers audio ou vidéos compatibles pour voir les formats proposés.
               </p>
             )}
           </div>
@@ -257,9 +270,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
               placeholder="nom_ou_suffixe"
             />
             <p className="progress-text">
-              {files.length <= 1
-                ? `Nom final : ${outputName}${targetFormat ? `.${targetFormat}` : ''}`
-                : `Chaque fichier sortira avec le suffixe _${outputName}.`}
+              {targetFormat ? `Exemple : ${namePreview}` : 'Sélectionnez un format de sortie pour voir un exemple.'}
             </p>
           </div>
 
@@ -275,10 +286,10 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
               {status === 'processing'
                 ? `Fichier en cours : ${getFileName(currentFile)}`
                 : status === 'success'
-                  ? 'Tous les fichiers ont ete convertis.'
+                  ? 'Tous les fichiers ont été convertis.'
                   : targetFormat
-                    ? `Sortie selectionnee : ${targetFormat.toUpperCase()}`
-                    : 'Selectionnez d abord des fichiers pour voir les sorties possibles.'}
+                    ? `Sortie sélectionnée : ${targetFormat.toUpperCase()}`
+                    : 'Sélectionnez d’abord des fichiers pour voir les sorties possibles.'}
             </p>
           </div>
 
@@ -298,7 +309,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test' }) => {
             className={`btn btn-block ${status === 'success' ? 'btn-success' : 'btn-primary'}`}
           >
             {status === 'success' ? <CheckCircle size={20} /> : <Play size={20} />}
-            {status === 'processing' ? 'Conversion en cours...' : status === 'success' ? 'Succes !' : 'Convertir le lot'}
+            {status === 'processing' ? 'Conversion en cours...' : status === 'success' ? 'Succès !' : 'Convertir le lot'}
           </button>
         </aside>
       </div>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { FileStack, FolderOpen, Files } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -7,16 +7,16 @@ import { usePathDropzone } from '../utils/dropzone';
 import BatchFileList from '../components/BatchFileList';
 import OutputDirectoryCard from '../components/OutputDirectoryCard';
 import {
-  buildSingleOrBatchOutputName,
   removePathFromList,
   toUniquePaths,
   getFileName,
 } from '../utils/filePaths';
+import { renderTemplateForPaths } from '../utils/nameTemplate';
 
-const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
+const FusionPDF = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = 'document_fusionne' }) => {
   const [paths, setPaths] = useState([]);
   const [outputDir, setOutputDir] = useState(defaultOutputDir);
-  const [outputName, setOutputName] = useState('document_fusionne');
+  const [outputName, setOutputName] = useState(nameTemplate);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
@@ -24,15 +24,19 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const [batchTotal, setBatchTotal] = useState(0);
   const progressPercent = batchTotal > 0 ? Math.round((completedCount / batchTotal) * 100) : loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
 
-  const mergedName = useMemo(() => `${outputName}.pdf`, [outputName]);
+  useEffect(() => {
+    if (paths.length === 0) {
+      setOutputName(nameTemplate);
+    }
+  }, [paths.length, nameTemplate]);
+
+  const mergedName = useMemo(
+    () => `${renderTemplateForPaths(outputName, paths, { batchName: 'document_fusionne', batchExtension: 'pdf' })}.pdf`,
+    [outputName, paths],
+  );
 
   const appendFiles = (files) => {
     setPaths((prev) => toUniquePaths(prev, files));
-    setOutputName(buildSingleOrBatchOutputName(files, {
-      singleSuffix: '_fusion',
-      batchName: 'document_fusionne',
-      fallback: 'document',
-    }));
     setStatus("");
   };
 
@@ -99,14 +103,14 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
   return (
     <section className="view-shell view-narrow">
       <div className="section-heading">
-        <div className="section-title">
-          <span className="section-icon accent-red"><FileStack size={22} /></span>
-          <div>
-            <h2>Fusionner des PDF</h2>
-            <p>Assemblez plusieurs documents PDF dans un seul fichier final, dans l'ordre choisi.</p>
+          <div className="section-title">
+            <span className="section-icon accent-red"><FileStack size={22} /></span>
+            <div>
+              <h2>Fusionner des PDF</h2>
+              <p>Assemblez plusieurs documents PDF dans un seul fichier final, dans l’ordre choisi.</p>
+            </div>
           </div>
-        </div>
-        <div className="info-pill">{paths.length} fichiers selectionnes</div>
+        <div className="info-pill">{paths.length} fichiers sélectionnés</div>
       </div>
 
       <div className="content-grid">
@@ -115,7 +119,7 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
             <div className="hero-drop-copy">
               <span className="section-icon accent-red"><FolderOpen size={24} /></span>
               <h3>Ajouter des PDF</h3>
-              <p>{isDragActive ? 'Deposez vos PDF ici.' : 'Selectionnez au moins deux documents PDF a assembler dans le meme fichier.'}</p>
+              <p>{isDragActive ? 'Déposez vos PDF ici.' : 'Sélectionnez au moins deux documents PDF à assembler dans le même fichier.'}</p>
             </div>
           </div>
 
@@ -125,7 +129,7 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
             <div className="between-row">
               <div>
                 <p className="eyebrow">Ordre des documents</p>
-                <h3 className="panel-title">PDF a fusionner</h3>
+                <h3 className="panel-title">PDF à fusionner</h3>
               </div>
               <button onClick={handlePick} className="btn btn-secondary">
                 Ajouter
@@ -137,7 +141,7 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
               accentClass="accent-red"
               loading={loading}
               currentPath={currentPath}
-              emptyMessage="Aucun PDF selectionne pour le moment."
+              emptyMessage="Aucun PDF sélectionné pour le moment."
               onRemove={(path) => setPaths((prev) => removePathFromList(prev, path))}
             />
           </div>
@@ -164,7 +168,7 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
           <div className="progress-card">
             <div className="between-row">
-              <span className="eyebrow light">Resume</span>
+              <span className="eyebrow light">Résumé</span>
               <span className="progress-value">{completedCount}/{batchTotal || paths.length}</span>
             </div>
             <div className="progress-track">
@@ -172,12 +176,12 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
             <p className="progress-text">
               {loading && currentPath
-                ? `Traite : ${getFileName(currentPath)}`
+                ? `Traitement : ${getFileName(currentPath)}`
                 : paths.length < 2 && completedCount === 0
-                  ? "Ajoutez au moins deux PDF pour lancer la fusion."
+                  ? 'Ajoutez au moins deux PDF pour lancer la fusion.'
                   : loading
-                    ? `${completedCount} PDF deja integres dans ${mergedName}.`
-                    : `${paths.length} PDF seront fusionnes dans ${mergedName}.`}
+                    ? `${completedCount} PDF déjà intégrés dans ${mergedName}.`
+                    : `${paths.length} PDF seront fusionnés dans ${mergedName}.`}
             </p>
           </div>
 

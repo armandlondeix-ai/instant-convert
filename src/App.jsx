@@ -3,18 +3,19 @@ import Sidebar from './components/Sidebar';
 import Compresser from './views/Compresser';
 import Convertir from './views/Convertir';
 import FusionPDF from './views/FusionPDF';
-import Ocr from './views/Ocr'; 
+import Ocr from './views/Ocr';
 import Reduction from './views/Reduction';
 import Settings from './views/Settings';
+import About from './views/About';
 import { getTranslation } from './i18n';
 import { defaultSettings, loadSettings, saveSettings } from './settings';
 
 
 const App = () => {
   const [settings, setSettings] = useState(() => loadSettings());
-  const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('instant-convert-last-tab') || 'convertir';
-  });
+  const [activeTab, setActiveTab] = useState(
+    () => localStorage.getItem('instant-convert-last-tab') || 'convertir',
+  );
   const language = settings.language || defaultSettings.language;
   const t = useMemo(() => getTranslation(language), [language]);
   const [resolvedAppearance, setResolvedAppearance] = useState('light');
@@ -27,10 +28,6 @@ const App = () => {
       saveSettings(next);
       return next;
     });
-  };
-
-  const handleSetLanguage = (nextLanguage) => {
-    updateSettings({ language: nextLanguage });
   };
 
   const handleSetActiveTab = (nextTab) => {
@@ -58,10 +55,42 @@ const App = () => {
   }, [settings.appearance]);
 
   const views = [
-    { id: 'compresser', element: <Compresser defaultOutputDir={settings.defaultOutputDir} /> },
-    { id: 'convertir', element: <Convertir defaultOutputDir={settings.defaultOutputDir} /> },
-    { id: 'fusionner', element: <FusionPDF defaultOutputDir={settings.defaultOutputDir} /> },
-    { id: 'reduction', element: <Reduction defaultOutputDir={settings.defaultOutputDir} /> },
+    {
+      id: 'compresser',
+      element: (
+        <Compresser
+          defaultOutputDir={settings.defaultOutputDir}
+          nameTemplate={settings.compressionNameTemplate}
+        />
+      ),
+    },
+    {
+      id: 'convertir',
+      element: (
+        <Convertir
+          defaultOutputDir={settings.defaultOutputDir}
+          nameTemplate={settings.conversionNameTemplate}
+        />
+      ),
+    },
+    {
+      id: 'fusionner',
+      element: (
+        <FusionPDF
+          defaultOutputDir={settings.defaultOutputDir}
+          nameTemplate={settings.mergeNameTemplate}
+        />
+      ),
+    },
+    {
+      id: 'reduction',
+      element: (
+        <Reduction
+          defaultOutputDir={settings.defaultOutputDir}
+          nameTemplate={settings.reductionNameTemplate}
+        />
+      ),
+    },
     { id: 'ocr', element: <Ocr /> },
     {
       id: 'reglages',
@@ -74,6 +103,7 @@ const App = () => {
         />
       ),
     },
+    { id: 'apropos', element: <About /> },
   ];
 
   return (

@@ -1,14 +1,8 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use image::imageops::FilterType;
 use ocrs::{ImageSource, OcrEngine, OcrEngineParams};
 use rten::Model;
-
-const OCR_DETECTION_MODEL_URL: &str =
-    "https://ocrs-models.s3-accelerate.amazonaws.com/text-detection.rten";
-const OCR_RECOGNITION_MODEL_URL: &str =
-    "https://ocrs-models.s3-accelerate.amazonaws.com/text-recognition.rten";
 
 fn resolve_ocr_model_path(file_name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -16,49 +10,15 @@ fn resolve_ocr_model_path(file_name: &str) -> PathBuf {
         .join(file_name)
 }
 
-fn download_file(url: &str, destination: &Path) -> Result<(), String> {
-    let response = reqwest::blocking::get(url)
-        .map_err(|e| format!("Téléchargement impossible depuis {} : {}", url, e))?;
-
-    if !response.status().is_success() {
-        return Err(format!(
-            "Téléchargement impossible depuis {} : code HTTP {}",
-            url,
-            response.status()
-        ));
-    }
-
-    let bytes = response
-        .bytes()
-        .map_err(|e| format!("Lecture du téléchargement impossible : {}", e))?;
-
-    fs::write(destination, &bytes)
-        .map_err(|e| format!("Impossible d'enregistrer {} : {}", destination.display(), e))?;
-
-    Ok(())
-}
-
 fn ensure_ocr_models() -> Result<(PathBuf, PathBuf), String> {
-    let models_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("models");
-    if !models_dir.exists() {
-        fs::create_dir_all(&models_dir).map_err(|e| {
-            format!(
-                "Impossible de créer le dossier de modèles OCR {} : {}",
-                models_dir.display(),
-                e
-            )
-        })?;
-    }
-
     let detection_model_path = resolve_ocr_model_path("text-detection.rten");
     let recognition_model_path = resolve_ocr_model_path("text-recognition.rten");
 
-    if !detection_model_path.exists() {
-        download_file(OCR_DETECTION_MODEL_URL, &detection_model_path)?;
-    }
-
-    if !recognition_model_path.exists() {
-        download_file(OCR_RECOGNITION_MODEL_URL, &recognition_model_path)?;
+    if !detection_model_path.exists() || !recognition_model_path.exists() {
+        return Err(
+            "Les modèles OCR sont manquants. Réinstallez l'application pour restaurer les fichiers."
+                .to_string(),
+        );
     }
 
     Ok((detection_model_path, recognition_model_path))

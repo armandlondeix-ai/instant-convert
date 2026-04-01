@@ -1,58 +1,77 @@
 # Instant Convert
 
-Instant Convert is a local desktop toolbox built with Tauri, React and Rust.
-It focuses on common file workflows without sending files to a remote service.
+Instant Convert is a local desktop toolbox built with Tauri, React, and Rust.
+It is designed for common file workflows without sending your files to a remote service.
 
-## What the app does
+## What It Includes
 
-The current application includes:
-
-- image, audio and video conversion
+- File conversion for images, documents, audio, and video
 - ZIP compression for files and folders
-- PDF merge
-- batch image reduction
+- PDF merging
+- Batch image reduction
 - OCR text extraction from images
-- language and appearance settings stored locally
+- Local language, appearance, and output naming settings
+- An in-app "About" page with project info, supported formats, and links
 
-The interface keeps long-running tasks alive when switching between tools, and batch screens show live progress as files are processed.
+## Main Screens
 
-## Current feature set
+- `Convertir` converts batches of compatible files and shows live progress
+- `Compresser` builds ZIP archives from files and folders
+- `Fusionner PDF` merges multiple PDFs into a single document
+- `Réduction` resizes images in batch and can export grayscale versions
+- `OCR` extracts text from images using local models
+- `Réglages` stores preferences locally on the device
+- `À propos` shows project details, acknowledgements, supported formats, and donation links
+
+## Supported Workflows
 
 ### Conversion
 
-- Images to `pdf`, `png`, `jpg`, `jpeg`, `webp`, `bmp`, `gif`, `tiff`
-- Audio to `mp3`, `wav`, `flac`, `ogg`, `opus`, `m4a`, `aac`, `wma`, `aiff`
-- Video to `mp4`, `mkv`, `mov`, `avi`, `webm`, `flv`, `wmv`, `m4v`, `mpg`, `mpeg`, `ts`, `3gp`, `ogv`
+- Images can be converted to formats such as `pdf`, `png`, `jpg`, `jpeg`, `webp`, `bmp`, `gif`, and `tiff`
+- Audio and video conversions are available for compatible inputs and outputs
+- Document conversions are available for supported document types
+- The exact output formats depend on the input file family and the local tools available on the system
 
 ### Compression
 
-- ZIP archive generation from one or many files
-- Folder compression
-- Progress feedback during batch processing
+- Create ZIP archives from one or many files
+- Add folders as inputs
+- Monitor progress during batch compression
 
-### PDF tools
+### PDF Merge
 
 - Merge several PDF files into one output file
+- Reorder files before merging
 
-### Image reduction
+### Image Reduction
 
-- Batch resize based on a percentage
-- Optional grayscale export
+- Resize multiple images in one batch
+- Choose a scale percentage
+- Optionally export grayscale results
 
 ### OCR
 
-- Text extraction from image files
-- OCR models stored locally in `src-tauri/models`
-- Models downloaded automatically if missing
+- Extract text from image files
+- OCR models are stored locally in `src-tauri/models`
+- Missing models are downloaded automatically on first use
 
-## Tech stack
+## Settings
+
+The app keeps several preferences locally on the device:
+
+- Language
+- Light, dark, or system appearance
+- Default output directory
+- Output filename templates for conversion, compression, merge, and reduction
+
+## Tech Stack
 
 - Tauri 2
 - React 19
 - Vite
 - Rust
-- `ffmpeg` for audio and video conversion
-- `ocrs` + `rten` for OCR
+- `ffmpeg` for audio and video processing
+- `ocrs` and `rten` for OCR
 
 ## Requirements
 
@@ -97,7 +116,7 @@ Build the desktop application:
 npm run tauri build
 ```
 
-## Project structure
+## Project Structure
 
 ### Frontend
 
@@ -110,20 +129,22 @@ npm run tauri build
 - `src-tauri/src/lib.rs` is the Tauri entry point
 - `src-tauri/src/conversion.rs` handles file conversion commands
 - `src-tauri/src/compression.rs` handles ZIP compression
-- `src-tauri/src/merge.rs` handles PDF merge
+- `src-tauri/src/merge.rs` handles PDF merging
 - `src-tauri/src/reduction.rs` handles image reduction
 - `src-tauri/src/ocr.rs` handles OCR
 - `src-tauri/src/shared.rs` contains shared backend helpers
 
 ## Notes
 
-- Everything is designed to run locally on the machine.
-- OCR model files live in `src-tauri/models`.
-- Generated directories such as `dist`, `node_modules` and `src-tauri/target` should not be committed.
+- Everything is designed to run locally on the machine
+- OCR model files live in `src-tauri/models`
+- Generated directories such as `dist`, `node_modules`, and `src-tauri/target` should not be committed
 
-## Open source
+## Licenses
 
-This project is released under the MIT license. See [LICENSE](./LICENSE).
+This project is released under the MIT License. See [LICENSE](./LICENSE).
+
+Third-party dependencies keep their own licenses. Refer to the Rust and npm dependency manifests for the full list of bundled components.
 
 For contributions and project guidelines, see:
 

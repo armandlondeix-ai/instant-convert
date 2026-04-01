@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Minimize2, SlidersHorizontal, FolderOpen, Image as ImageIcon } from 'lucide-react';
 import { runRustCommand } from '../utils/tauri';
@@ -6,15 +6,14 @@ import { usePathDropzone } from '../utils/dropzone';
 import BatchFileList from '../components/BatchFileList';
 import OutputDirectoryCard from '../components/OutputDirectoryCard';
 import {
-  buildSingleOrBatchOutputName,
   removePathFromList,
   toUniquePaths,
 } from '../utils/filePaths';
 
-const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
+const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%name%_reduction' }) => {
   const [paths, setPaths] = useState([]);
   const [outputDir, setOutputDir] = useState(defaultOutputDir);
-  const [outputName, setOutputName] = useState('reduit');
+  const [outputName, setOutputName] = useState(nameTemplate);
   const [scale, setScale] = useState(50);
   const [grayscale, setGrayscale] = useState(false);
   const [status, setStatus] = useState('');
@@ -22,19 +21,20 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
   const progressPercent = loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
 
   const summary = useMemo(() => {
-    if (paths.length === 0) return "Ajoutez des images pour preparer la reduction.";
-    return `${paths.length} image${paths.length > 1 ? 's' : ''} seront reduites a ${scale}%${grayscale ? ' en niveaux de gris' : ''}.`;
+    if (paths.length === 0) return 'Ajoutez des images pour préparer la réduction.';
+    return `${paths.length} image${paths.length > 1 ? 's' : ''} seront réduites à ${scale}%${grayscale ? ' en niveaux de gris' : ''}.`;
   }, [paths, scale, grayscale]);
 
   const appendFiles = (files) => {
     setPaths((prev) => toUniquePaths(prev, files));
-    setOutputName(buildSingleOrBatchOutputName(files, {
-      singleSuffix: '_reduction',
-      batchName: 'reduction',
-      fallback: 'image',
-    }));
     setStatus('');
   };
+
+  useEffect(() => {
+    if (paths.length === 0) {
+      setOutputName(nameTemplate);
+    }
+  }, [paths.length, nameTemplate]);
 
   const handlePick = async () => {
     const selected = await open({
@@ -65,7 +65,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
     if (paths.length === 0) return;
 
     setLoading(true);
-    setStatus('Reduction en cours...');
+    setStatus('Réduction en cours...');
     try {
       const result = await runRustCommand('reduce_images', {
         paths,
@@ -85,14 +85,14 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
   return (
     <section className="view-shell view-narrow">
       <div className="section-heading">
-        <div className="section-title">
-          <span className="section-icon accent-gold"><Minimize2 size={22} /></span>
-          <div>
-            <h2>Reduire le poids</h2>
-            <p>Redimensionnez plusieurs images en une fois avec un dossier de sortie clair.</p>
+          <div className="section-title">
+            <span className="section-icon accent-gold"><Minimize2 size={22} /></span>
+            <div>
+              <h2>Réduire le poids</h2>
+              <p>Redimensionnez plusieurs images en une fois avec un dossier de sortie clair.</p>
+            </div>
           </div>
-        </div>
-        <div className="info-pill">{paths.length} fichiers selectionnes</div>
+        <div className="info-pill">{paths.length} fichiers sélectionnés</div>
       </div>
 
       <div className="content-grid">
@@ -100,8 +100,8 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
           <div {...getRootProps()} className={`hero-drop hero-drop-gold ${isDragActive ? 'drag-active' : ''}`} onClick={handlePick}>
             <div className="hero-drop-copy">
               <span className="section-icon accent-gold"><FolderOpen size={24} /></span>
-              <h3>Selection des images</h3>
-              <p>{isDragActive ? 'Deposez vos images ici.' : 'Choisissez une ou plusieurs images a redimensionner.'}</p>
+              <h3>Sélection des images</h3>
+              <p>{isDragActive ? 'Déposez vos images ici.' : 'Choisissez une ou plusieurs images à redimensionner.'}</p>
             </div>
           </div>
 
@@ -110,7 +110,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
           <div className="panel stack-md">
             <div className="between-row">
               <div>
-                <p className="eyebrow">Fichiers a traiter</p>
+                <p className="eyebrow">Fichiers à traiter</p>
                 <h3 className="panel-title">Images du lot</h3>
               </div>
               <button onClick={handlePick} className="btn btn-secondary">
@@ -122,7 +122,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
               files={paths}
               accentClass="accent-gold"
               loading={loading}
-              emptyMessage="Aucune image selectionnee pour le moment."
+              emptyMessage="Aucune image sélectionnée pour le moment."
               onRemove={(path) => setPaths((prev) => removePathFromList(prev, path))}
             />
           </div>
@@ -131,7 +131,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
         <aside className="settings-panel">
           <div className="settings-header">
             <ImageIcon size={18} />
-            <span>Reduction</span>
+            <span>Réduction</span>
           </div>
 
           <div className="progress-card">
@@ -145,7 +145,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
           </div>
 
           <div className="progress-card">
-            <label className="eyebrow light">Echelle</label>
+            <label className="eyebrow light">Échelle</label>
             <label className="range-label range-label-light">{scale}%</label>
             <input
               type="range"
@@ -171,7 +171,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
           <div className="progress-card">
             <div className="between-row">
-              <span className="eyebrow light">Resume</span>
+              <span className="eyebrow light">Résumé</span>
               <span className="progress-value">{paths.length}</span>
             </div>
             <div className="progress-track">
@@ -192,7 +192,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test' }) => {
             className="btn btn-primary btn-block"
           >
             <SlidersHorizontal size={18} />
-            {loading ? 'Reduction en cours...' : 'Appliquer la reduction'}
+            {loading ? 'Réduction en cours...' : 'Appliquer la réduction'}
           </button>
         </aside>
       </div>

@@ -57,7 +57,7 @@ const Ocr = () => {
           <span className="section-icon accent-teal"><ScanText size={22} /></span>
           <div>
             <h2>Extraction de texte</h2>
-            <p>Transformez vos images et scans en texte editable.</p>
+            <p>Transformez vos images et scans en texte éditable.</p>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@ const Ocr = () => {
               <div className="hero-drop-copy">
                 <ImageIcon size={40} />
                 <h3>Choisir une image</h3>
-                <p>{isDragActive ? 'Deposez votre image ici.' : 'PNG, JPG, JPEG ou WEBP.'}</p>
+                <p>{isDragActive ? 'Déposez votre image ici.' : 'PNG, JPG, JPEG ou WEBP.'}</p>
               </div>
             )}
           </div>
@@ -105,7 +105,7 @@ const Ocr = () => {
           <textarea
             value={extractedText}
             readOnly
-            placeholder="Le texte apparaitra ici apres l'analyse..."
+            placeholder="Le texte apparaîtra ici après l’analyse..."
             className="result-textarea"
           />
           {error && <div className="status-banner error">{error}</div>}

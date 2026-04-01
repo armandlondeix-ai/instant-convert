@@ -4,6 +4,10 @@ export const defaultSettings = {
   language: 'fr',
   appearance: 'system',
   defaultOutputDir: '/home/armand/Test',
+  conversionNameTemplate: '%name%_converti',
+  compressionNameTemplate: '%name%_compresse',
+  mergeNameTemplate: 'document_fusionne',
+  reductionNameTemplate: '%name%_reduction',
 };
 
 export const loadSettings = () => {

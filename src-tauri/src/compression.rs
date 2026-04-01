@@ -7,7 +7,7 @@ use serde::Serialize;
 use tauri::Emitter;
 use zip::write::SimpleFileOptions;
 
-use crate::shared::cleaned_output_name;
+use crate::shared::{cleaned_output_name, render_single_output_name_template};
 
 #[derive(Clone, Serialize)]
 struct CompressionProgress {
@@ -70,8 +70,6 @@ where
         fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
     }
 
-    let zip_path = output_dir.join(format!("{}.zip", output_name));
-
     let mut validated_paths = Vec::new();
     for path_str in paths {
         let path = PathBuf::from(&path_str);
@@ -80,6 +78,28 @@ where
         }
         validated_paths.push(path);
     }
+
+    let name_placeholder = if validated_paths.len() == 1 {
+        validated_paths[0]
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("archive")
+            .to_string()
+    } else {
+        "lot".to_string()
+    };
+    let ext_placeholder = if validated_paths.len() == 1 {
+        validated_paths[0]
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_lowercase()
+    } else {
+        "mix".to_string()
+    };
+    let rendered_output_name =
+        render_single_output_name_template(&output_name, &name_placeholder, &ext_placeholder);
+    let zip_path = output_dir.join(format!("{}.zip", rendered_output_name));
 
     let file = File::create(&zip_path).map_err(|e| e.to_string())?;
     let writer = BufWriter::new(file);

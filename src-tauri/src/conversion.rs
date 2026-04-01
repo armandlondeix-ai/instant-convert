@@ -13,6 +13,7 @@ use crate::shared::{
 #[derive(Clone, Serialize)]
 struct ConversionProgress {
     path: String,
+    output_path: String,
 }
 
 #[tauri::command]
@@ -53,6 +54,9 @@ pub async fn convert_format(
                         converters::image_to_image(input_path, &dest_path)?;
                     }
                 }
+                Some("document") => {
+                    converters::document_to_document(input_path, &dest_path)?;
+                }
                 Some("audio") => {
                     converters::audio_to_audio(input_path, &dest_path)?;
                 }
@@ -69,7 +73,10 @@ pub async fn convert_format(
 
             app.emit(
                 "conversion-progress",
-                ConversionProgress { path: path.clone() },
+                ConversionProgress {
+                    path: path.clone(),
+                    output_path: dest_path.to_string_lossy().into_owned(),
+                },
             )
             .map_err(|e| e.to_string())?;
         }

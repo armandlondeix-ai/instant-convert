@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FileArchive, FolderOpen, Archive } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';
@@ -7,17 +7,15 @@ import { usePathDropzone } from '../utils/dropzone';
 import BatchFileList from '../components/BatchFileList';
 import OutputDirectoryCard from '../components/OutputDirectoryCard';
 import {
-  buildSingleOrBatchOutputName,
   removePathFromList,
   toUniquePaths,
-  getFileName,
-  getFileStem,
 } from '../utils/filePaths';
+import { renderTemplateForPaths } from '../utils/nameTemplate';
 
-const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
+const Compresser = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%name%_compresse' }) => {
   const [paths, setPaths] = useState([]);
   const [outputDir, setOutputDir] = useState(defaultOutputDir);
-  const [outputName, setOutputName] = useState('archive_compresse');
+  const [outputName, setOutputName] = useState(nameTemplate);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
@@ -27,22 +25,18 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
   const appendFiles = (files) => {
     setPaths((prev) => toUniquePaths(prev, files));
-    setOutputName(buildSingleOrBatchOutputName(files, {
-      singleSuffix: '_compresse',
-      batchName: 'lot_compresse',
-      fallback: 'archive',
-    }));
     setStatus('');
   };
 
-  const archiveName = useMemo(() => {
-    if (paths.length === 0) return `${outputName}.zip`;
-    if (paths.length === 1) {
-      const fileName = getFileName(paths[0]) || 'archive';
-      const stem = getFileStem(paths[0], 'archive');
-      return `${outputName || `${stem || 'archive'}_compresse`}.zip`;
+  useEffect(() => {
+    if (paths.length === 0) {
+      setOutputName(nameTemplate);
     }
-    return `${outputName}.zip`;
+  }, [paths.length, nameTemplate]);
+
+  const archiveName = useMemo(() => {
+    const rendered = renderTemplateForPaths(outputName, paths);
+    return `${rendered}.zip`;
   }, [paths, outputName]);
 
   const handlePick = async () => {
@@ -111,14 +105,14 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
   return (
     <section className="view-shell view-narrow">
       <div className="section-heading">
-        <div className="section-title">
-          <span className="section-icon accent-orange"><FileArchive size={22} /></span>
-          <div>
-            <h2>Compresser</h2>
-            <p>Choisissez vos fichiers, verifiez le contenu du lot et generez une archive ZIP fiable.</p>
+          <div className="section-title">
+            <span className="section-icon accent-orange"><FileArchive size={22} /></span>
+            <div>
+              <h2>Compresser</h2>
+              <p>Choisissez vos fichiers, vérifiez le contenu du lot et générez une archive ZIP fiable.</p>
+            </div>
           </div>
-        </div>
-        <div className="info-pill">{paths.length} fichiers selectionnes</div>
+        <div className="info-pill">{paths.length} fichiers sélectionnés</div>
       </div>
 
       <div className="content-grid">
@@ -126,8 +120,8 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
           <div {...getRootProps()} className={`hero-drop hero-drop-orange ${isDragActive ? 'drag-active' : ''}`} onClick={handlePick}>
             <div className="hero-drop-copy">
               <span className="section-icon accent-orange"><FolderOpen size={24} /></span>
-              <h3>Selection des fichiers et dossiers</h3>
-              <p>{isDragActive ? 'Deposez vos fichiers ici.' : 'Ajoutez un ou plusieurs fichiers ou dossiers a placer dans la meme archive ZIP.'}</p>
+              <h3>Sélection des fichiers et dossiers</h3>
+              <p>{isDragActive ? 'Déposez vos fichiers ici.' : 'Ajoutez un ou plusieurs fichiers ou dossiers à placer dans la même archive ZIP.'}</p>
             </div>
           </div>
 
@@ -136,15 +130,15 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
           <div className="panel stack-md">
             <div className="between-row">
               <div>
-                <p className="eyebrow">Contenu de l'archive</p>
-                <h3 className="panel-title">Fichiers a compresser</h3>
+                <p className="eyebrow">Contenu de l’archive</p>
+                <h3 className="panel-title">Fichiers à compresser</h3>
               </div>
               <div className="button-row">
                 <button onClick={handlePick} className="btn btn-secondary">
-                  Ajouter fichiers
+                  Ajouter des fichiers
                 </button>
                 <button onClick={handlePickFolders} className="btn btn-secondary">
-                  Ajouter dossiers
+                  Ajouter des dossiers
                 </button>
               </div>
             </div>
@@ -154,7 +148,7 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
               accentClass="accent-orange"
               loading={loading}
               currentPath={currentPath}
-              emptyMessage="Aucun fichier selectionne pour le moment."
+              emptyMessage="Aucun fichier sélectionné pour le moment."
               onRemove={removeFile}
             />
           </div>
@@ -181,7 +175,7 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
 
           <div className="progress-card">
             <div className="between-row">
-              <span className="eyebrow light">Resume</span>
+              <span className="eyebrow light">Résumé</span>
               <span className="progress-value">{completedCount}/{batchTotal || paths.length}</span>
             </div>
             <div className="progress-track">
@@ -189,12 +183,12 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
             </div>
             <p className="progress-text">
               {loading && currentPath
-                ? `Traite : ${currentPath.split('/').pop()}`
+                ? `Traitement : ${currentPath.split('/').pop()}`
                 : paths.length === 0 && completedCount === 0
-                  ? "Ajoutez des fichiers pour preparer l'archive."
+                  ? 'Ajoutez des fichiers pour préparer l’archive.'
                   : loading
-                    ? `${completedCount} fichier${completedCount > 1 ? 's' : ''} deja compresses dans ${archiveName}.`
-                    : `${paths.length} fichier${paths.length > 1 ? 's' : ''} seront compresses dans ${archiveName}.`}
+                    ? `${completedCount} fichier${completedCount > 1 ? 's' : ''} déjà compressés dans ${archiveName}.`
+                    : `${paths.length} fichier${paths.length > 1 ? 's' : ''} seront compressés dans ${archiveName}.`}
             </p>
           </div>
 
@@ -209,7 +203,7 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test' }) => {
             onClick={handleAction}
             className="btn btn-primary btn-block"
           >
-            {loading ? 'Compression en cours...' : `Generer l'archive ZIP (${paths.length})`}
+            {loading ? 'Compression en cours...' : `Générer l’archive ZIP (${paths.length})`}
           </button>
         </aside>
       </div>

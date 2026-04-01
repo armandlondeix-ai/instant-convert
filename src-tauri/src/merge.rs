@@ -7,7 +7,7 @@ use lopdf::{Dictionary, Document, Object};
 use serde::Serialize;
 use tauri::Emitter;
 
-use crate::shared::cleaned_output_name;
+use crate::shared::{cleaned_output_name, render_single_output_name_template};
 
 #[derive(Clone, Serialize)]
 struct MergeProgress {
@@ -31,6 +31,19 @@ where
     let mut target_doc = Document::with_version("1.5");
     let mut pages_list = Vec::new();
     let mut max_id = 1;
+
+    let name_placeholder = if paths.len() == 1 {
+        PathBuf::from(&paths[0])
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document")
+            .to_string()
+    } else {
+        "document_fusionne".to_string()
+    };
+    let ext_placeholder = "pdf".to_string();
+    let rendered_output_name =
+        render_single_output_name_template(&output_name, &name_placeholder, &ext_placeholder);
 
     for path in paths {
         let mut doc = Document::load(&path).map_err(|e| format!("Erreur sur {}: {}", path, e))?;
@@ -60,7 +73,7 @@ where
     if !output_dir.exists() {
         fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
     }
-    let output_path = output_dir.join(format!("{}.pdf", output_name));
+    let output_path = output_dir.join(format!("{}.pdf", rendered_output_name));
     let file = File::create(&output_path).map_err(|e| e.to_string())?;
     let mut writer = BufWriter::new(file);
     target_doc.save_to(&mut writer).map_err(|e| e.to_string())?;

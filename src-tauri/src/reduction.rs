@@ -75,11 +75,3 @@ pub fn reduce_images(
 
     Ok(format!("Images réduites dans : {}", output_dir.display()))
 }
-
-#[tauri::command]
-pub fn process_files(paths: Vec<String>) -> Result<String, String> {
-    for path in paths {
-        println!("Traitement pour réduction : {}", path);
-    }
-    Ok("Succès".to_string())
-}

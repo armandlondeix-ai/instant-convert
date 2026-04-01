@@ -1,12 +1,13 @@
 import React from 'react';
-import { 
-  FileArchive, 
-  RefreshCcw, 
-  FileStack, 
-  ScanText, 
+import {
+  FileArchive,
+  RefreshCcw,
+  FileStack,
+  ScanText,
   Settings,
+  Info,
   ChevronRight,
-  Minimize2 // Importation d'une icône plus adaptée pour "Réduire"
+  Minimize2,
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, t }) => {
@@ -17,6 +18,7 @@ const Sidebar = ({ activeTab, setActiveTab, t }) => {
     { id: 'reduction', label: t.tabs.reduction, icon: <Minimize2 size={20} /> },
     { id: 'ocr', label: t.tabs.ocr, icon: <ScanText size={20} /> },
     { id: 'reglages', label: t.tabs.reglages, icon: <Settings size={20} /> },
+    { id: 'apropos', label: t.tabs.apropos, icon: <Info size={20} /> },
   ];
 
   return (
@@ -44,10 +46,6 @@ const Sidebar = ({ activeTab, setActiveTab, t }) => {
           </button>
         ))}
       </nav>
-
-      <div className="sidebar-footer">
-        Tauri + Rust Backend v1.0.0
-      </div>
     </aside>
   );
 };
