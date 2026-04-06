@@ -1,6 +1,7 @@
 import { getFileStem, getFileName } from "./filePaths";
 
 export const todayIsoDate = () => {
+  // Les modèles de nommage utilisent une date stable au format ISO.
   try {
     return new Date().toISOString().slice(0, 10);
   } catch {
@@ -9,6 +10,7 @@ export const todayIsoDate = () => {
 };
 
 export const applyNameTemplate = (template, { name, extension, date } = {}) => {
+  // On normalise les entrées pour éviter les erreurs si un champ est absent.
   const safeTemplate = (template ?? "").toString();
   const safeName = (name ?? "").toString();
   const safeExt = (extension ?? "").toString();
@@ -21,6 +23,7 @@ export const applyNameTemplate = (template, { name, extension, date } = {}) => {
 };
 
 export const renderTemplateForPaths = (template, paths = [], options = {}) => {
+  // Les lots utilisent un nom générique, alors qu’un seul fichier garde son stem.
   const date = todayIsoDate();
   const first = paths[0];
   const batchName = options.batchName ?? "lot";
@@ -39,6 +42,3 @@ export const renderTemplateForPaths = (template, paths = [], options = {}) => {
   const rendered = applyNameTemplate(template, { name, extension, date }).trim();
   return rendered || name || "fichier";
 };
-
-export const renderTemplateForPath = (template, path) =>
-  renderTemplateForPaths(template, path ? [path] : []);

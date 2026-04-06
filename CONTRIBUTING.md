@@ -1,13 +1,21 @@
 # Contributing
 
-Thanks for considering a contribution to Instant Convert.
+Thanks for wanting to help with Instant Convert.
 
-## How To Help
+## Before You Start
 
-- report bugs with clear reproduction steps
-- suggest UX improvements
-- improve conversion support or error handling
-- add tests and polish documentation
+- Read the README first so you understand the app structure
+- Keep changes small and focused when possible
+- Prefer clear code over clever code
+- Do not commit generated folders such as `dist`, `node_modules`, or `src-tauri/target`
+
+## What You Can Help With
+
+- Bug reports with clear reproduction steps
+- UX improvements
+- New file format support
+- Better error messages
+- Tests and documentation updates
 
 ## Development Setup
 
@@ -16,25 +24,26 @@ npm install
 npm run tauri dev
 ```
 
-Make sure `ffmpeg` is installed locally if you work on audio or video conversion.
-
-## Guidelines
-
-- keep changes focused and small when possible
-- preserve existing UI patterns unless a redesign is intentional
-- do not commit generated folders such as `dist`, `node_modules` or `src-tauri/target`
-- update documentation when behavior changes
+If you work on audio or video features, make sure `ffmpeg` is installed locally.
 
 ## Pull Requests
 
-- explain the problem being solved
-- describe the user-visible change
-- include verification steps
-- attach screenshots for UI changes when relevant
+Please include:
+
+- A short description of the problem
+- The user-visible change
+- How you tested it
+- Screenshots for UI changes when useful
 
 ## Code Style
 
-- frontend: keep components readable and avoid unnecessary abstraction
-- backend: prefer clear error messages and explicit format validation
+- Frontend: keep components easy to read and avoid unnecessary abstraction
+- Backend: prefer explicit validation and readable error messages
+- Shared logic should live in the common helper files, not duplicated in screens
 
-By participating in this project, you agree to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
+## Maintenance Notes
+
+- Update the documentation when behavior changes
+- Preserve the existing UI patterns unless a redesign is intentional
+
+By contributing, you agree to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).

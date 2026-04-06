@@ -1,14 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Minimize2, SlidersHorizontal, FolderOpen, Image as ImageIcon } from 'lucide-react';
-import { runRustCommand } from '../utils/tauri';
-import { usePathDropzone } from '../utils/dropzone';
-import BatchFileList from '../components/BatchFileList';
-import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import { runRustCommand } from '../shared/utils/tauri';
+import { usePathDropzone } from '../shared/hooks/usePathDropzone';
+import BatchFileList from '../shared/components/BatchFileList';
+import OutputDirectoryCard from '../shared/components/OutputDirectoryCard';
 import {
   removePathFromList,
   toUniquePaths,
-} from '../utils/filePaths';
+} from '../shared/utils/filePaths';
 
 const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%name%_reduction' }) => {
   const [paths, setPaths] = useState([]);
@@ -20,10 +20,11 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
   const [loading, setLoading] = useState(false);
   const progressPercent = loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
 
-  const summary = useMemo(() => {
-    if (paths.length === 0) return 'Ajoutez des images, puis ajustez l’échelle pour alléger le lot.';
-    return `${paths.length} image${paths.length > 1 ? 's' : ''} seront traitées à ${scale}%${grayscale ? ' en niveaux de gris' : ''}.`;
-  }, [paths, scale, grayscale]);
+  // Ce texte sert de résumé rapide dans la barre latérale de réglages.
+  const summary =
+    paths.length === 0
+      ? 'Ajoutez des images, puis ajustez l’échelle pour alléger le lot.'
+      : `${paths.length} image${paths.length > 1 ? 's' : ''} seront traitées à ${scale}%${grayscale ? ' en niveaux de gris' : ''}.`;
 
   const appendFiles = (files) => {
     setPaths((prev) => toUniquePaths(prev, files));
@@ -64,6 +65,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
   const handleReduce = async () => {
     if (paths.length === 0) return;
 
+    // Le traitement s'effectue en Rust; le frontend ne fait qu'orchestrer et afficher l'état.
     setLoading(true);
     setStatus('Réduction en cours...');
     try {

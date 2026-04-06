@@ -9,6 +9,7 @@ const normalizePaths = (acceptedFiles) =>
 export const usePathDropzone = ({ onPathsSelected, extensions = [], multiple = true }) => {
   const onDrop = useCallback(
     (acceptedFiles) => {
+      // react-dropzone renvoie des File objects; on ne garde que les chemins exploitables.
       const paths = normalizePaths(acceptedFiles);
       if (paths.length > 0) {
         onPathsSelected(paths);

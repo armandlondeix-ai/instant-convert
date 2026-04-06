@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 export const selectFiles = async (extensions = []) => {
   try {
+    // Le dialog natif filtre au maximum côté système d’exploitation.
     const filters = extensions.length > 0 
       ? [{ name: 'Fichiers', extensions }] 
       : [];
@@ -22,5 +23,6 @@ export const selectFiles = async (extensions = []) => {
 };
 
 export const runRustCommand = async (command, args = {}) => {
+  // Centralise les invocations backend pour garder un point d’entrée unique.
   return await invoke(command, args);
 };

@@ -5,12 +5,14 @@ use ocrs::{ImageSource, OcrEngine, OcrEngineParams};
 use rten::Model;
 
 fn resolve_ocr_model_path(file_name: &str) -> PathBuf {
+    // Les modèles OCR sont empaquetés avec l'application, pas téléchargés à chaud.
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("models")
         .join(file_name)
 }
 
 fn ensure_ocr_models() -> Result<(PathBuf, PathBuf), String> {
+    // On échoue tôt avec un message clair si les modèles attendus ne sont pas présents.
     let detection_model_path = resolve_ocr_model_path("text-detection.rten");
     let recognition_model_path = resolve_ocr_model_path("text-recognition.rten");
 
@@ -28,6 +30,7 @@ fn extract_text_from_dynamic_image(
     engine: &OcrEngine,
     image: &image::DynamicImage,
 ) -> Result<String, String> {
+    // L'engine OCR travaille sur des buffers RGB déjà préparés pour éviter les conversions cachées.
     let rgb = image.to_rgb8();
     let img_source = ImageSource::from_bytes(rgb.as_raw(), rgb.dimensions())
         .map_err(|e| format!("Préparation de l'image OCR impossible : {}", e))?;
@@ -73,6 +76,7 @@ fn run_ocr_sync(path: String) -> Result<String, String> {
     let img = image::open(&image_path)
         .map_err(|e| format!("Impossible d'ouvrir l'image {} : {}", image_path.display(), e))?;
 
+    // Plusieurs variantes sont testées pour maximiser les chances d'obtenir du texte lisible.
     let candidates = [
         img.clone(),
         image::DynamicImage::ImageLuma8(img.grayscale().to_luma8()),

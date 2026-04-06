@@ -1,17 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { FileStack, FolderOpen, Files } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { runRustCommand } from '../utils/tauri';
-import { usePathDropzone } from '../utils/dropzone';
-import BatchFileList from '../components/BatchFileList';
-import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import { runRustCommand } from '../shared/utils/tauri';
+import { usePathDropzone } from '../shared/hooks/usePathDropzone';
+import BatchFileList from '../shared/components/BatchFileList';
+import OutputDirectoryCard from '../shared/components/OutputDirectoryCard';
 import {
   removePathFromList,
   toUniquePaths,
   getFileName,
-} from '../utils/filePaths';
-import { renderTemplateForPaths } from '../utils/nameTemplate';
+} from '../shared/utils/filePaths';
+import { renderTemplateForPaths } from '../shared/utils/nameTemplate';
 
 const FusionPDF = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = 'document_fusionne' }) => {
   const [paths, setPaths] = useState([]);
@@ -30,10 +30,7 @@ const FusionPDF = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = 'doc
     }
   }, [paths.length, nameTemplate]);
 
-  const mergedName = useMemo(
-    () => `${renderTemplateForPaths(outputName, paths, { batchName: 'document_fusionne', batchExtension: 'pdf' })}.pdf`,
-    [outputName, paths],
-  );
+  const mergedName = `${renderTemplateForPaths(outputName, paths, { batchName: 'document_fusionne', batchExtension: 'pdf' })}.pdf`;
 
   const appendFiles = (files) => {
     setPaths((prev) => toUniquePaths(prev, files));

@@ -2,23 +2,23 @@
 
 ## Our Standard
 
-Please help keep this project respectful, constructive and welcoming.
+We want this project to stay respectful, helpful, and welcoming.
 
-Expected behavior:
+Please:
 
-- be polite and assume good intent
-- give feedback on ideas, not people
-- stay open to correction and different levels of experience
-- prefer actionable bug reports and concrete suggestions
+- Be polite and assume good intent
+- Focus feedback on the code or idea, not the person
+- Stay open to correction and different levels of experience
+- Prefer concrete suggestions over vague criticism
 
-Unacceptable behavior:
+## Unacceptable Behavior
 
-- harassment, insults or discrimination
-- personal attacks or hostile conduct
-- deliberate disruption of discussions or contributions
+- Harassment, insults, or discrimination
+- Personal attacks or hostile conduct
+- Deliberate disruption of discussion or contributions
 
 ## Enforcement
 
-Project maintainers may edit, remove or reject contributions and discussions that do not align with this code of conduct.
+Maintainers may edit, remove, or reject contributions and discussions that do not follow this code.
 
-If you experience a problem, open a private channel with the maintainer if possible rather than escalating publicly.
+If you run into a problem, contact the maintainer privately if possible instead of escalating it publicly.

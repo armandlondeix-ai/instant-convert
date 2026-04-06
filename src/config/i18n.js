@@ -47,7 +47,7 @@ export const translations = {
       donateHint:
         'Si Instant Convert vous est utile, vous pouvez soutenir le développement via un don.',
       donateNotConfigured:
-        'Les liens de don ne sont pas configurés. Renseignez-les dans src/aboutConfig.js pour activer les boutons.',
+        'Les liens de don ne sont pas configurés. Renseignez-les dans src/config/aboutConfig.js pour activer les boutons.',
     },
     settings: {
       title: 'Réglages',
@@ -113,7 +113,7 @@ export const translations = {
       donateHint:
         'If Instant Convert is useful to you, you can support development with a donation.',
       donateNotConfigured:
-        'Donation links are not configured. Fill them in src/aboutConfig.js to enable the buttons.',
+        'Donation links are not configured. Fill them in src/config/aboutConfig.js to enable the buttons.',
     },
     settings: {
       title: 'Settings',
@@ -179,7 +179,7 @@ export const translations = {
       donateHint:
         'Si Instant Convert te es util, puedes apoyar el desarrollo con una donacion.',
       donateNotConfigured:
-        'Enlaces de donacion no configurados. Rellenalos en src/aboutConfig.js para activar los botones.',
+        'Enlaces de donacion no configurados. Rellenalos en src/config/aboutConfig.js para activar los botones.',
     },
     settings: {
       title: 'Ajustes',
@@ -245,7 +245,7 @@ export const translations = {
       donateHint:
         'Wenn Instant Convert fur dich nutzlich ist, kannst du die Entwicklung mit einer Spende unterstutzen.',
       donateNotConfigured:
-        'Spendenlinks sind nicht konfiguriert. Trage sie in src/aboutConfig.js ein, um die Buttons zu aktivieren.',
+        'Spendenlinks sind nicht konfiguriert. Trage sie in src/config/aboutConfig.js ein, um die Buttons zu aktivieren.',
     },
     settings: {
       title: 'Einstellungen',
@@ -311,7 +311,7 @@ export const translations = {
       donateHint:
         'Se Instant Convert ti e utile, puoi supportare lo sviluppo con una donazione.',
       donateNotConfigured:
-        'Link di donazione non configurati. Inseriscili in src/aboutConfig.js per attivare i pulsanti.',
+        'Link di donazione non configurati. Inseriscili in src/config/aboutConfig.js per attivare i pulsanti.',
     },
     settings: {
       title: 'Impostazioni',
@@ -377,7 +377,7 @@ export const translations = {
       donateHint:
         'Если Instant Convert вам полезен, вы можете поддержать разработку пожертвованием.',
       donateNotConfigured:
-        'Ссылки для пожертвований не настроены. Укажите их в src/aboutConfig.js, чтобы включить кнопки.',
+        'Ссылки для пожертвований не настроены. Укажите их в src/config/aboutConfig.js, чтобы включить кнопки.',
     },
     settings: {
       title: 'Настройки',
@@ -443,7 +443,7 @@ export const translations = {
       donateHint:
         '如果 Instant Convert 对你有帮助，你可以通过捐赠支持开发。',
       donateNotConfigured:
-        '未配置捐赠链接。请在 src/aboutConfig.js 中填写以启用按钮。',
+        '未配置捐赠链接。请在 src/config/aboutConfig.js 中填写以启用按钮。',
     },
     settings: {
       title: '设置',

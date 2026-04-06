@@ -1,24 +1,23 @@
 # Security Policy
 
-## Reporting
+## How To Report A Security Issue
 
-If you discover a security issue, please do not post it publicly first.
+If you find a security problem, please do not publish it publicly first.
+Send it privately to the maintainer with:
 
-Instead, contact the maintainer privately with:
+- A clear description of the issue
+- The impact you expect
+- Steps to reproduce it
+- The version or environment affected
 
-- a description of the issue
-- impact assessment
-- reproduction steps
-- affected versions or environments
+## What Counts As Security Relevant
 
-The maintainer will review the report and respond as quickly as possible.
+Reports are especially useful for:
 
-## Scope
+- Unsafe file handling
+- Path traversal problems
+- Command execution risks
+- Bundled dependency concerns
+- OCR model download or integrity issues
 
-Security reports are especially helpful for:
-
-- command execution risks
-- unsafe file handling
-- path traversal issues
-- bundled dependency concerns
-- OCR model download integrity concerns
+The maintainer will review the report and respond as soon as possible.

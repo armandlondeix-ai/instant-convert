@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { getVersion } from "@tauri-apps/api/app";
-import { aboutConfig } from "../aboutConfig";
-import { defaultSettings, loadSettings } from "../settings";
-import { getTranslation } from "../i18n";
-import { supportedFormats } from "../supportedFormats";
+import { aboutConfig } from "../config/aboutConfig";
+import { defaultSettings, loadSettings } from "../config/settings";
+import { getTranslation } from "../config/i18n";
+import { supportedFormats } from "../config/supportedFormats";
 
 const acknowledgements = [
   { name: "Tauri", url: "https://tauri.app" },
@@ -24,17 +24,25 @@ const acknowledgements = [
   { name: "ort", url: "https://crates.io/crates/ort" },
 ];
 
-const supportButtonLabels = [
-  { key: "githubSponsors", label: "GitHub Sponsors" },
-  { key: "kofi", label: "Ko-fi" },
-  { key: "paypal", label: "PayPal" },
-];
-
 // Ouvre le lien dans le navigateur système, seulement si une URL est fournie.
 const openExternal = async (url) => {
   if (!url) return;
+
+  let parsedUrl;
   try {
-    await openUrl(url);
+    parsedUrl = new URL(url);
+  } catch {
+    console.error("URL externe invalide:", url);
+    return;
+  }
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    console.error("Schéma d’URL refusé:", parsedUrl.protocol);
+    return;
+  }
+
+  try {
+    await openUrl(parsedUrl.toString());
   } catch (err) {
     console.error("Impossible d’ouvrir le lien:", err);
   }
@@ -42,9 +50,9 @@ const openExternal = async (url) => {
 
 const About = () => {
   const [version, setVersion] = useState("");
-  const settings = useMemo(() => loadSettings(), []);
+  const [settings] = useState(() => loadSettings());
   const language = settings.language || defaultSettings.language;
-  const t = useMemo(() => getTranslation(language), [language]);
+  const t = getTranslation(language);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.__TAURI_INTERNALS__?.metadata?.currentWindow?.label) {
@@ -77,7 +85,7 @@ const About = () => {
     return () => media.removeEventListener("change", applyAppearance);
   }, [settings.appearance]);
 
-  const { project = {}, links = {}, donate = {} } = aboutConfig;
+  const { project = {}, links = {} } = aboutConfig;
 
   const formatGroups = [
     {
@@ -183,26 +191,6 @@ const About = () => {
             </div>
           </section>
 
-          {/* <section className="about-card">
-            <h2>{t.about.donateTitle}</h2>
-            <p className="about-hint">{t.about.donateHint}</p>
-            <div className="about-actions about-actions-left">
-              {supportButtonLabels.map((item) => (
-                <button
-                  key={item.key}
-                  className="about-button"
-                  onClick={() => openExternal(donate[item.key])}
-                  disabled={!donate[item.key]}
-                  type="button"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            {!donate.githubSponsors && !donate.kofi && !donate.paypal && (
-              <p className="about-note">{t.about.donateNotConfigured}</p>
-            )}
-          </section> */}
         </div>
       </main>
     </div>

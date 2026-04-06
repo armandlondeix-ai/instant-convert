@@ -1,10 +1,11 @@
 import React from 'react';
 import { Globe2, Languages, FolderOpen } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { supportedLanguages } from '../i18n';
-import { renderTemplateForPaths } from '../utils/nameTemplate';
+import { supportedLanguages } from '../config/i18n';
+import { renderTemplateForPaths } from '../shared/utils/nameTemplate';
 
 const Settings = ({ settings, updateSettings, t, resolvedAppearance }) => {
+  // Les options sont construites à partir des traductions pour éviter les libellés en dur.
   const appearanceOptions = [
     { value: 'light', label: t.settings.appearanceLight },
     { value: 'dark', label: t.settings.appearanceDark },
@@ -13,6 +14,7 @@ const Settings = ({ settings, updateSettings, t, resolvedAppearance }) => {
 
   const currentLanguageLabel = supportedLanguages.find((item) => item.code === settings.language)?.label;
   const currentAppearanceLabel = appearanceOptions.find((item) => item.value === settings.appearance)?.label;
+  // Prévisualisation compacte des formats de nommage pour chaque outil.
   const previewTemplates = [
     { label: t.settings.namingConversion, value: settings.conversionNameTemplate },
     { label: t.settings.namingCompression, value: settings.compressionNameTemplate },
@@ -66,6 +68,7 @@ const Settings = ({ settings, updateSettings, t, resolvedAppearance }) => {
   ];
 
   const handlePickOutputDir = async () => {
+    // Le dossier de sortie est choisi via le sélecteur natif pour rester cohérent avec le reste de l'app.
     const selected = await open({
       directory: true,
       defaultPath: settings.defaultOutputDir,

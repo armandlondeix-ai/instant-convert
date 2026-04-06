@@ -8,6 +8,7 @@ mod shared;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Point d'entrée unique: on enregistre tous les handlers Tauri ici pour garder le bootstrap lisible.
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())

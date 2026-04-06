@@ -7,6 +7,7 @@ use crate::shared::{build_batch_output_stem, cleaned_output_name};
 
 #[tauri::command]
 pub fn reduire_image(path: String, scale_percent: u32) -> Result<String, String> {
+    // Version mono-fichier: on écrit la copie réduite à côté de l'original.
     let img = image::open(&path).map_err(|e| e.to_string())?;
     let nwidth = (img.width() * scale_percent) / 100;
     let nheight = (img.height() * scale_percent) / 100;
@@ -49,6 +50,7 @@ pub fn reduce_images(
     let single_file = paths.len() == 1;
 
     for path in &paths {
+        // On conserve le ratio d'aspect grâce au redimensionnement Lanczos3.
         let img = image::open(path).map_err(|e| format!("Erreur sur {}: {}", path, e))?;
         let new_width = ((img.width() * scale_percent) / 100).max(1);
         let new_height = ((img.height() * scale_percent) / 100).max(1);
@@ -61,6 +63,7 @@ pub fn reduce_images(
         };
 
         let input_path = Path::new(path);
+        // Le nom de sortie suit la même logique que les autres outils batch.
         let stem = build_batch_output_stem(input_path, &output_name, single_file);
         let ext = input_path
             .extension()

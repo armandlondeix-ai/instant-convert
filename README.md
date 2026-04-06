@@ -1,153 +1,149 @@
 # Instant Convert
 
-Instant Convert is a local desktop toolbox built with Tauri, React, and Rust.
-It is designed for common file workflows without sending your files to a remote service.
+Instant Convert is a local desktop toolbox for converting, compressing, merging, reducing, and extracting text from files.
+It is built with Tauri, React, and Rust, and it keeps your files on your machine instead of sending them to a remote service.
 
-## What It Includes
+## What It Does
 
-- File conversion for images, documents, audio, and video
-- ZIP compression for files and folders
-- PDF merging
-- Batch image reduction
-- OCR text extraction from images
-- Local language, appearance, and output naming settings
-- An in-app "About" page with project info, supported formats, and links
+- Convert images, documents, audio, and video when the format is supported
+- Compress files and folders into ZIP archives
+- Merge several PDF files into one document
+- Reduce the size of multiple images in batch
+- Extract text from images with OCR
+- Save language, theme, output folder, and naming preferences locally
 
-## Main Screens
+## How To Use It
 
-- `Convertir` converts batches of compatible files and shows live progress
-- `Compresser` builds ZIP archives from files and folders
-- `Fusionner PDF` merges multiple PDFs into a single document
-- `Réduction` resizes images in batch and can export grayscale versions
-- `OCR` extracts text from images using local models
-- `Réglages` stores preferences locally on the device
-- `À propos` shows project details, acknowledgements, supported formats, and donation links
+The app is organized into seven main screens:
 
-## Supported Workflows
+- `Convertir` converts compatible files and shows live progress
+- `Compresser` creates ZIP archives from files or folders
+- `Fusionner PDF` merges PDF files into one document
+- `Réduction` resizes images in batch and can also convert them to grayscale
+- `OCR` extracts text from a single image using local OCR models
+- `Réglages` stores your preferences on the device
+- `À propos` shows project information, supported formats, and useful links
 
-### Conversion
+## Quick Start
 
-- Images can be converted to formats such as `pdf`, `png`, `jpg`, `jpeg`, `webp`, `bmp`, `gif`, and `tiff`
-- Audio and video conversions are available for compatible inputs and outputs
-- Document conversions are available for supported document types
-- The exact output formats depend on the input file family and the local tools available on the system
-
-### Compression
-
-- Create ZIP archives from one or many files
-- Add folders as inputs
-- Monitor progress during batch compression
-
-### PDF Merge
-
-- Merge several PDF files into one output file
-- Reorder files before merging
-
-### Image Reduction
-
-- Resize multiple images in one batch
-- Choose a scale percentage
-- Optionally export grayscale results
-
-### OCR
-
-- Extract text from image files
-- OCR models are stored locally in `src-tauri/models`
-- Missing models are downloaded automatically on first use
-
-## Settings
-
-The app keeps several preferences locally on the device:
-
-- Language
-- Light, dark, or system appearance
-- Default output directory
-- Output filename templates for conversion, compression, merge, and reduction
-
-## Tech Stack
-
-- Tauri 2
-- React 19
-- Vite
-- Rust
-- `ffmpeg` for audio and video processing
-- `ocrs` and `rten` for OCR
-
-## Requirements
-
-To run the desktop app locally, make sure you have:
-
-- Node.js 20 or newer
-- Rust toolchain
-- Tauri system prerequisites for your OS
-- `ffmpeg` available in your `PATH`
-
-If `ffmpeg` is missing, audio and video conversion will fail.
-
-## Development
-
-Install dependencies:
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-Run the frontend only:
+### Run the frontend only
 
 ```bash
 npm run dev
 ```
 
-Run the desktop app in development:
+### Run the desktop app in development
 
 ```bash
 npm run tauri dev
 ```
 
-Build the frontend:
+### Build the frontend
 
 ```bash
 npm run build
 ```
 
-Build the desktop application:
+### Build the desktop application
 
 ```bash
 npm run tauri build
 ```
 
-## Project Structure
+## Requirements
+
+You need:
+
+- Node.js 20 or newer
+- Rust toolchain
+- The Tauri prerequisites for your operating system
+- `ffmpeg` available in your `PATH` for audio and video conversion
+
+If `ffmpeg` is missing, audio and video conversions will fail.
+
+## Project Layout
 
 ### Frontend
 
-- `src/views/` contains the tool screens
-- `src/components/` contains shared interface pieces
-- `src/utils/` contains frontend helpers
+- `src/views/` contains the screens for each tool
+- `src/shared/components/` contains reusable UI components
+- `src/shared/hooks/` contains reusable React hooks
+- `src/shared/utils/` contains frontend helper functions
+- `src/config/` contains translations, settings, formats, and app data
 
 ### Backend
 
-- `src-tauri/src/lib.rs` is the Tauri entry point
-- `src-tauri/src/conversion.rs` handles file conversion commands
+- `src-tauri/src/lib.rs` registers the Tauri commands
+- `src-tauri/src/conversion.rs` handles file conversion
 - `src-tauri/src/compression.rs` handles ZIP compression
 - `src-tauri/src/merge.rs` handles PDF merging
 - `src-tauri/src/reduction.rs` handles image reduction
 - `src-tauri/src/ocr.rs` handles OCR
 - `src-tauri/src/shared.rs` contains shared backend helpers
 
-## Notes
+## Supported Workflows
 
-- Everything is designed to run locally on the machine
-- OCR model files live in `src-tauri/models`
-- Generated directories such as `dist`, `node_modules`, and `src-tauri/target` should not be committed
+### Conversion
 
-## Licenses
+- Images can be converted to formats such as `pdf`, `png`, `jpg`, `jpeg`, `webp`, `bmp`, `gif`, and `tiff`
+- Audio and video conversions are available when the input and output formats are supported locally
+- Document conversions are available for supported document types
+- The exact output formats depend on the file family and the tools installed on the system
 
-This project is released under the MIT License. See [LICENSE](./LICENSE).
+### Compression
 
-Third-party dependencies keep their own licenses. Refer to the Rust and npm dependency manifests for the full list of bundled components.
+- Create ZIP archives from one file, many files, or folders
+- Monitor progress while the archive is being created
 
-For contributions and project guidelines, see:
+### PDF Merge
+
+- Merge several PDF files into a single output file
+- Keep a predictable output name for the generated PDF
+
+### Image Reduction
+
+- Reduce the size of multiple images in one batch
+- Choose a scale percentage
+- Optionally export grayscale results
+
+### OCR
+
+- Extract text from one image at a time
+- OCR models are stored locally in `src-tauri/models`
+- If the models are missing, reinstall the app to restore them
+
+## Settings
+
+The app stores these preferences locally on the device:
+
+- Language
+- Light, dark, or system appearance
+- Default output directory
+- Output filename templates for conversion, compression, merge, and reduction
+
+## License
+
+This project is released under the MIT License.
+That means you can use, copy, modify, and redistribute the code under the terms described in [LICENSE](./LICENSE).
+
+Third-party dependencies keep their own licenses.
+Check `Cargo.toml`, `Cargo.lock`, and `package-lock.json` for the packages included in the project.
+
+## Contributing
+
+If you want to help, please read:
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 - [SECURITY.md](./SECURITY.md)
+
+## Notes
+
+- The app is designed to run locally on your machine
+- Generated folders such as `dist`, `node_modules`, and `src-tauri/target` should not be committed

@@ -7,6 +7,7 @@ pub fn cleaned_output_name(name: &str) -> Option<String> {
 }
 
 pub fn build_batch_output_stem(input_path: &Path, output_name: &str, single_file: bool) -> String {
+    // On part du stem du fichier d'origine pour conserver un nom lisible en sortie.
     let input_stem = input_path
         .file_stem()
         .and_then(|s| s.to_str())
@@ -29,7 +30,7 @@ pub fn build_batch_output_stem(input_path: &Path, output_name: &str, single_file
     } else if template.contains("%name%") {
         rendered
     } else {
-        // évite les collisions si le template ne varie pas par fichier
+        // Sans placeholder %name%, on préfixe le stem pour éviter d'écraser des fichiers.
         format!("{}_{}", input_stem, rendered)
     }
 }
@@ -41,6 +42,7 @@ pub fn normalized_extension(path: &Path) -> Option<String> {
 }
 
 pub fn path_media_family(path: &Path) -> Option<&'static str> {
+    // On regroupe les formats par famille pour appliquer les bons pipelines de conversion.
     match normalized_extension(path).as_deref() {
         Some(
             "png"
@@ -201,6 +203,7 @@ pub fn shared_output_formats(paths: &[String]) -> Result<Vec<String>, String> {
             return Err(format!("Fichier introuvable : {}", input_path.display()));
         }
 
+        // On intersecte les formats disponibles pour ne garder que les sorties communes.
         let current_formats: BTreeSet<String> = available_output_formats_for_path(input_path)
             .into_iter()
             .map(|format| format.to_string())
@@ -227,12 +230,14 @@ pub fn render_single_output_name_template(
     name: &str,
     extension: &str,
 ) -> String {
+    // Un seul fichier peut utiliser son nom final directement, avec sanitation.
     let date = current_utc_date_yyyy_mm_dd();
     let rendered = render_name_template(template.trim(), name, extension, &date);
     sanitize_output_component(&rendered).unwrap_or_else(|| name.to_string())
 }
 
 pub fn sanitize_output_component(value: &str) -> Option<String> {
+    // Les noms de sortie doivent rester compatibles avec les systèmes de fichiers classiques.
     let mut sanitized = String::with_capacity(value.len());
 
     for ch in value.trim().chars() {
@@ -253,6 +258,7 @@ pub fn sanitize_output_component(value: &str) -> Option<String> {
 }
 
 fn current_utc_date_yyyy_mm_dd() -> String {
+    // On évite une dépendance externe pour une date simple et stable au format AAAA-MM-JJ.
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())

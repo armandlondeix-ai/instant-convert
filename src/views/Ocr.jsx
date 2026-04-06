@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScanText, Copy, Check, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { selectFiles, runRustCommand } from '../utils/tauri';
-import { usePathDropzone } from '../utils/dropzone';
+import { selectFiles, runRustCommand } from '../shared/utils/tauri';
+import { usePathDropzone } from '../shared/hooks/usePathDropzone';
 
 const Ocr = () => {
   const [imagePath, setImagePath] = useState(null);

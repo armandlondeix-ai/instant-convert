@@ -1,22 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { RefreshCcw, FileText, Settings2, Play, CheckCircle } from 'lucide-react';
-import { usePathDropzone } from '../utils/dropzone';
-import BatchFileList from '../components/BatchFileList';
-import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import { usePathDropzone } from '../shared/hooks/usePathDropzone';
+import BatchFileList from '../shared/components/BatchFileList';
+import OutputDirectoryCard from '../shared/components/OutputDirectoryCard';
 import {
   removePathFromList,
   toUniquePaths,
   getFileName,
   getFileStem,
-} from '../utils/filePaths';
-import { applyNameTemplate, todayIsoDate } from '../utils/nameTemplate';
-import { supportedExtensionsForPicker } from '../supportedFormats';
-
-const SUPPORTED_EXTENSIONS = supportedExtensionsForPicker;
+} from '../shared/utils/filePaths';
+import { applyNameTemplate, todayIsoDate } from '../shared/utils/nameTemplate';
+import { supportedExtensionsForPicker } from '../config/supportedFormats';
 
 const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%name%_converti' }) => {
   const [files, setFiles] = useState([]);
@@ -36,6 +34,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
   };
 
   useEffect(() => {
+    // Quand le lot est vide, on rétablit le modèle initial pour garder un état prévisible.
     if (files.length === 0) {
       setOutputName(nameTemplate);
     }
@@ -43,6 +42,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
 
   useEffect(() => {
     const loadFormats = async () => {
+      // Les formats disponibles sont calculés côté Rust à partir de la sélection courante.
       if (status === 'processing') {
         return;
       }
@@ -77,9 +77,10 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
   }, [files, status]);
 
   const selectFiles = async () => {
+    // Le filtre natif évite d'ouvrir des fichiers non compatibles dès le départ.
     const selected = await open({
       multiple: true,
-      filters: [{ name: 'Fichiers compatibles', extensions: SUPPORTED_EXTENSIONS }]
+      filters: [{ name: 'Fichiers compatibles', extensions: supportedExtensionsForPicker }]
     });
 
     if (!selected) return;
@@ -89,7 +90,7 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
 
   const { getRootProps, isDragActive } = usePathDropzone({
     onPathsSelected: appendFiles,
-    extensions: SUPPORTED_EXTENSIONS,
+    extensions: supportedExtensionsForPicker,
   });
 
   const removeFile = (fileToRemove) => {
@@ -109,14 +110,13 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
 
     const batchFiles = [...files];
 
+    // On suit la progression via un événement Tauri pour garder l'UI réactive.
     setStatus('processing');
     setCompletedCount(0);
     setBatchTotal(batchFiles.length);
     setCurrentFile(batchFiles[0] || '');
     setErrorMessage('');
     setLastConvertedPath('');
-
-    const singleFile = batchFiles.length === 1;
 
     const unlisten = await listen('conversion-progress', (event) => {
       const processedFile = event.payload?.path;
@@ -156,26 +156,30 @@ const Convertir = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
 
   const progressPercent = batchTotal > 0 ? Math.round((completedCount / batchTotal) * 100) : 0;
 
-  const namePreview = useMemo(() => {
-    if (!targetFormat) return '';
+  // L'aperçu doit refléter le nom réel généré pour éviter les surprises côté utilisateur.
+  let namePreview = '';
+  if (targetFormat) {
     const sample = files[0];
-    if (!sample) return `${outputName}.${targetFormat}`;
-    const stem = getFileStem(sample, 'fichier');
-    const ext = (getFileName(sample).split('.').pop() || '').toLowerCase();
-    const rendered = applyNameTemplate(outputName, {
-      name: stem,
-      extension: ext,
-      date: todayIsoDate(),
-    }).trim();
+    if (!sample) {
+      namePreview = `${outputName}.${targetFormat}`;
+    } else {
+      const stem = getFileStem(sample, 'fichier');
+      const ext = (getFileName(sample).split('.').pop() || '').toLowerCase();
+      const rendered = applyNameTemplate(outputName, {
+        name: stem,
+        extension: ext,
+        date: todayIsoDate(),
+      }).trim();
 
-    const safeRendered = rendered || stem || 'fichier';
-    const uniqueRendered =
-      files.length > 1 && !outputName.includes('%name%')
-        ? `${stem}_${safeRendered}`
-        : safeRendered;
+      const safeRendered = rendered || stem || 'fichier';
+      const uniqueRendered =
+        files.length > 1 && !outputName.includes('%name%')
+          ? `${stem}_${safeRendered}`
+          : safeRendered;
 
-    return `${uniqueRendered}.${targetFormat}`;
-  }, [files, outputName, targetFormat]);
+      namePreview = `${uniqueRendered}.${targetFormat}`;
+    }
+  }
 
   const revealConvertedFile = async () => {
     if (!lastConvertedPath) return;

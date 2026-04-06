@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileArchive, FolderOpen, Archive } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';
-import { runRustCommand } from '../utils/tauri';
-import { usePathDropzone } from '../utils/dropzone';
-import BatchFileList from '../components/BatchFileList';
-import OutputDirectoryCard from '../components/OutputDirectoryCard';
+import { runRustCommand } from '../shared/utils/tauri';
+import { usePathDropzone } from '../shared/hooks/usePathDropzone';
+import BatchFileList from '../shared/components/BatchFileList';
+import OutputDirectoryCard from '../shared/components/OutputDirectoryCard';
 import {
   removePathFromList,
   toUniquePaths,
-} from '../utils/filePaths';
-import { renderTemplateForPaths } from '../utils/nameTemplate';
+} from '../shared/utils/filePaths';
+import { renderTemplateForPaths } from '../shared/utils/nameTemplate';
 
 const Compresser = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%name%_compresse' }) => {
   const [paths, setPaths] = useState([]);
@@ -29,15 +29,14 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%n
   };
 
   useEffect(() => {
+    // Quand il n'y a plus de fichiers, on réinitialise le nom proposé.
     if (paths.length === 0) {
       setOutputName(nameTemplate);
     }
   }, [paths.length, nameTemplate]);
 
-  const archiveName = useMemo(() => {
-    const rendered = renderTemplateForPaths(outputName, paths);
-    return `${rendered}.zip`;
-  }, [paths, outputName]);
+  // Le nom affiché correspond à ce qui sera réellement créé dans le zip.
+  const archiveName = `${renderTemplateForPaths(outputName, paths)}.zip`;
 
   const handlePick = async () => {
     const selected = await open({ multiple: true });
@@ -74,6 +73,7 @@ const Compresser = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%n
     if (paths.length === 0) return;
 
     const batchPaths = [...paths];
+    // La progression remonte depuis Rust au fil des fichiers ajoutés à l'archive.
     setLoading(true);
     setStatus('Compression en cours...');
     setCurrentPath('');

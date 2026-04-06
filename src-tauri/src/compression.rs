@@ -24,11 +24,20 @@ fn add_path_to_zip<W>(
 where
     W: Write + Seek,
 {
+    let metadata = fs::symlink_metadata(source_path).map_err(|e| e.to_string())?;
+
+    // Les liens symboliques sont ignorés pour éviter de zipper des fichiers en dehors du lot sélectionné.
+    if metadata.file_type().is_symlink() {
+        return Ok(());
+    }
+
+    // On ignore explicitement l'archive de sortie si elle se trouve dans le dossier source.
     if skipped_path.is_some_and(|path| source_path == path) {
         return Ok(());
     }
 
     if source_path.is_dir() {
+        // Les dossiers sont reproduits récursivement pour préserver l'arborescence.
         let dir_name = format!("{}/", archive_path.to_string_lossy().replace('\\', "/"));
         zip.add_directory(&dir_name, options)
             .map_err(|e| e.to_string())?;
@@ -79,6 +88,7 @@ where
         validated_paths.push(path);
     }
 
+    // Le nom final de l'archive dépend du cas simple ou du lot.
     let name_placeholder = if validated_paths.len() == 1 {
         validated_paths[0]
             .file_stem()
@@ -108,6 +118,7 @@ where
         .compression_method(zip::CompressionMethod::Deflated);
 
     for path in validated_paths {
+        // On utilise le nom racine de chaque élément pour garder une archive lisible.
         let archive_root = PathBuf::from(
             path.file_name()
                 .and_then(|name| name.to_str())

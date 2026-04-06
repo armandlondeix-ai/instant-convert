@@ -18,6 +18,7 @@ struct ConversionProgress {
 
 #[tauri::command]
 pub fn get_available_output_formats(paths: Vec<String>) -> Result<Vec<String>, String> {
+    // Le frontend appelle cette commande pour afficher les formats compatibles du lot courant.
     shared_output_formats(&paths)
 }
 
@@ -31,6 +32,7 @@ pub async fn convert_format(
 ) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let normalized_target = target.to_lowercase();
+        // On valide d'abord les contraintes métier avant de toucher aux fichiers.
         validate_target_for_paths(&paths, &normalized_target)?;
         let output_name = cleaned_output_name(&output_name).ok_or("Nom de sortie invalide")?;
 
@@ -43,6 +45,7 @@ pub async fn convert_format(
 
         for path in paths {
             let input_path = Path::new(&path);
+            // Le stem final dépend du nombre de fichiers et du modèle de nommage.
             let output_stem = build_batch_output_stem(input_path, &output_name, single_file);
             let dest_path = out_path.join(format!("{}.{}", output_stem, normalized_target));
 

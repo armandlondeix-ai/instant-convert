@@ -46,6 +46,7 @@ where
         render_single_output_name_template(&output_name, &name_placeholder, &ext_placeholder);
 
     for path in paths {
+        // Chaque PDF est chargé, réindexé et fusionné dans le document cible.
         let mut doc = Document::load(&path).map_err(|e| format!("Erreur sur {}: {}", path, e))?;
         doc.renumber_objects_with(max_id);
         let pages = doc.get_pages();
