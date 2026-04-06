@@ -21,8 +21,8 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
   const progressPercent = loading ? 75 : status && !status.startsWith('Erreur') ? 100 : 0;
 
   const summary = useMemo(() => {
-    if (paths.length === 0) return 'Ajoutez des images pour préparer la réduction.';
-    return `${paths.length} image${paths.length > 1 ? 's' : ''} seront réduites à ${scale}%${grayscale ? ' en niveaux de gris' : ''}.`;
+    if (paths.length === 0) return 'Ajoutez des images, puis ajustez l’échelle pour alléger le lot.';
+    return `${paths.length} image${paths.length > 1 ? 's' : ''} seront traitées à ${scale}%${grayscale ? ' en niveaux de gris' : ''}.`;
   }, [paths, scale, grayscale]);
 
   const appendFiles = (files) => {
@@ -88,8 +88,8 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
           <div className="section-title">
             <span className="section-icon accent-gold"><Minimize2 size={22} /></span>
             <div>
-              <h2>Réduire le poids</h2>
-              <p>Redimensionnez plusieurs images en une fois avec un dossier de sortie clair.</p>
+              <h2>Réduire le poids des images</h2>
+              <p>Allégez vos images par lot avec une échelle simple à régler et une sortie bien organisée.</p>
             </div>
           </div>
         <div className="info-pill">{paths.length} fichiers sélectionnés</div>
@@ -97,11 +97,33 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
 
       <div className="content-grid">
         <div className="main-column stack-lg">
+          <div className="panel reduction-intro">
+            <p className="eyebrow">Objectif</p>
+            <h3>Garder des images plus légères, sans complexifier le flux.</h3>
+            <p>
+              Déposez vos fichiers, choisissez la réduction souhaitée, puis exportez le résultat dans un dossier séparé.
+            </p>
+            <div className="reduction-kpis">
+              <div className="reduction-kpi">
+                <span className="reduction-kpi-value">Par lot</span>
+                <span className="reduction-kpi-label">Une seule action pour plusieurs images</span>
+              </div>
+              <div className="reduction-kpi">
+                <span className="reduction-kpi-value">{scale}%</span>
+                <span className="reduction-kpi-label">Réglage rapide de l’échelle</span>
+              </div>
+              <div className="reduction-kpi">
+                <span className="reduction-kpi-value">Local</span>
+                <span className="reduction-kpi-label">Traitement conservé sur votre machine</span>
+              </div>
+            </div>
+          </div>
+
           <div {...getRootProps()} className={`hero-drop hero-drop-gold ${isDragActive ? 'drag-active' : ''}`} onClick={handlePick}>
             <div className="hero-drop-copy">
               <span className="section-icon accent-gold"><FolderOpen size={24} /></span>
               <h3>Sélection des images</h3>
-              <p>{isDragActive ? 'Déposez vos images ici.' : 'Choisissez une ou plusieurs images à redimensionner.'}</p>
+              <p>{isDragActive ? 'Déposez vos images ici.' : 'Choisissez une ou plusieurs images à alléger.'}</p>
             </div>
           </div>
 
@@ -140,7 +162,7 @@ const Reduction = ({ defaultOutputDir = '/home/armand/Test', nameTemplate = '%na
               value={outputName}
               onChange={(e) => setOutputName(e.target.value)}
               className="text-input text-input-dark"
-              placeholder="nom_ou_suffixe"
+              placeholder="image_allégée"
             />
           </div>
 
